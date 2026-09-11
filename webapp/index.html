@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#071016" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Tiger Runner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='52'%3E%F0%9F%90%AF%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+
+      <div id="hud" hidden>
+        <div class="hud-left">
+          <div class="hud-score" id="hud-score">0</div>
+          <div class="hud-sub">SCORE</div>
+        </div>
+        <div class="hud-mid">
+          <div class="coin-chip" id="hud-coins">0</div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-score" id="hud-best">0</div>
+          <div class="hud-sub">BEST</div>
+        </div>
+      </div>
+
+      <button id="mute-btn" type="button" aria-label="Mute">🔊</button>
+
+      <div id="overlay" class="overlay">
+        <div class="panel" id="panel-menu">
+          <div class="logo-mark" aria-hidden="true">🐅</div>
+          <h1>Tiger Runner</h1>
+          <p class="tagline">Swipe the lanes. Jump the crates. Chase the coins.</p>
+          <ul class="howto">
+            <li>← → swipe / tap sides / arrows</li>
+            <li>↑ swipe up / tap center / space to jump</li>
+          </ul>
+          <button id="play-btn" class="primary" type="button">Play · Грати</button>
+          <p class="best-line">Best: <span id="menu-best">0</span></p>
+        </div>
+
+        <div class="panel" id="panel-over" hidden>
+          <h2>Game Over</h2>
+          <p class="over-score" id="over-score">0</p>
+          <p class="over-meta" id="over-meta"></p>
+          <button id="retry-btn" class="primary" type="button">Restart · Знову</button>
+          <button id="menu-btn" class="ghost" type="button">Menu</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
