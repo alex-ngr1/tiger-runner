@@ -1,0 +1,16 @@
+services:
+  webapp:
+    build: ./webapp
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  bot:
+    build: ./bot
+    env_file: .env
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      WEBAPP_URL: ${WEBAPP_URL}
+    restart: unless-stopped
+    depends_on:
+      - webapp
