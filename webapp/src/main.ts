@@ -86,12 +86,14 @@ function frame(now: number): void {
   game.tick(dt);
   game.draw();
 
-  if (game.mode === "playing") {
-    deadShown = false;
+  if (game.mode !== "menu") {
     const snap = game.hud();
     hudScore.textContent = String(snap.score);
     hudCoins.textContent = String(snap.coins);
     hudBest.textContent = String(snap.best);
+  }
+  if (game.mode === "playing") {
+    deadShown = false;
   } else if (game.mode === "dead" && !deadShown) {
     deadShown = true;
     showOver();

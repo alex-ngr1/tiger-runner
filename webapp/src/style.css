@@ -47,7 +47,7 @@ body {
   position: absolute;
   top: calc(10px + var(--safe-top));
   left: 12px;
-  right: 56px;
+  right: 58px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -96,8 +96,9 @@ body {
 
 #mute-btn {
   position: absolute;
-  top: calc(10px + var(--safe-top));
+  top: calc(52px + var(--safe-top));
   right: 10px;
+  z-index: 3;
   width: 40px;
   height: 40px;
   border: 0;

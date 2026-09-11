@@ -320,6 +320,7 @@ export class Game {
       if (e.kind === "coin") {
         e.taken = true;
         this.coins += 1;
+        this.score = Math.floor(this.distance * 2) + this.coins * 10;
         this.sfx.coin();
         haptic(this.tg, "coin");
         this.burst(e, "#ffd60a");
