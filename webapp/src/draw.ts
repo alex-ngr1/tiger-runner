@@ -252,9 +252,9 @@ export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: n
     if (z < -4 || z > 80) continue;
     const t = persp(z);
     const y = groundY(cam, t);
-    const shopH = cam.h * 0.36 * Math.max(0.14, t / persp(1.1));
-    const leftX = laneX(cam, -1.38, t);
-    const rightX = laneX(cam, 3.38, t);
+    const shopH = cam.h * 0.32 * Math.max(0.16, t / persp(2.2));
+    const leftX = laneX(cam, -1.72, t);
+    const rightX = laneX(cam, 3.72, t);
     // Alternate kiosk / trailer so both verges read as пивнухи, never on-lane.
     const leftKiosk = id % 2 === 0;
     drawShopSprite(ctx, leftKiosk ? sprites.kiosk : sprites.trailer, leftX, y, shopH);
@@ -536,9 +536,8 @@ const RUN_SHEET_SRC = `${import.meta.env.BASE_URL}korzh-run-sheet.png`;
 /** Local-space height of a packed Korzh frame. */
 const RUNNER_LOCAL_H = 82;
 
-function sheetFrameCount(sheet: HTMLImageElement): number {
-  const guess = Math.round(sheet.naturalWidth / (sheet.naturalHeight * (RUN_FRAME_W / RUN_FRAME_H)));
-  return Math.min(8, Math.max(4, guess || 5));
+function sheetFrameCount(_sheet: HTMLImageElement): number {
+  return 5;
 }
 
 let runSheet: HTMLImageElement | null = null;
