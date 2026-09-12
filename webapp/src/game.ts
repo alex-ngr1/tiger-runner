@@ -20,19 +20,14 @@ import { haptic, type TelegramWebApp } from "./telegram";
 export type GameMode = "menu" | "playing" | "dead";
 
 const BEST_KEY = "tigerRunner.bestScore";
-const PLAYER_Z = 1.1;
+const PLAYER_Z = 0.95;
 const SPAWN_Z = 86;
 const GRAVITY = 32;
 const JUMP_V = 12.2;
 const LANE_SPEED = 10;
 const BARRIER_CLEAR = 1.05;
-const CHASE_START = 11;
-const CHASE_CATCH = 0.55;
-const CHASE_MAX = 12;
-const MISS_PENALTY = 0.9;
-const HIT_BARRIER = 3.3;
-const HIT_TALL = 5.1;
-const COLLECT_RELIEF = 0.45;
+const CHASE_GIVE_UP = 9.5;
+const INVULN = 0.9;
 
 type Kind = "altushka" | "barrier" | "tall";
 
@@ -92,13 +87,12 @@ export class Game {
   private h = 640;
   private cam: Cam = makeCam(360, 640);
   private dpr = 1;
-  private chaseGap = CHASE_START;
-  private chasers: Chaser[] = [
-    { lane: 0, targetLane: 0 },
-    { lane: 2, targetLane: 2 },
-  ];
+  private chasing = false;
+  private chasers: Chaser[] = [];
   private chaseTick = 0;
+  private chaseAge = 0;
   private stumble = 0;
+  private invuln = 0;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -132,13 +126,12 @@ export class Game {
     this.spawnZ = 16;
     this.shake = 0;
     this.particles = [];
-    this.chaseGap = CHASE_START;
-    this.chasers = [
-      { lane: 0, targetLane: 0 },
-      { lane: 2, targetLane: 2 },
-    ];
+    this.chasing = false;
+    this.chasers = [];
     this.chaseTick = 0;
+    this.chaseAge = 0;
     this.stumble = 0;
+    this.invuln = 0;
     this.seedIntro();
   }
 
@@ -179,6 +172,7 @@ export class Game {
     this.phase += dt * (this.mode === "playing" ? 10 + this.speed * 0.12 : 6);
     this.shake = Math.max(0, this.shake - dt * 8);
     this.stumble = Math.max(0, this.stumble - dt);
+    this.invuln = Math.max(0, this.invuln - dt);
 
     if (this.mode === "playing") {
       const slow = this.stumble > 0 ? 0.72 : 1;
@@ -207,9 +201,6 @@ export class Game {
       for (const e of this.entities) e.z -= 10 * dt;
       if (this.entities.length < 6) this.spawnMenuBits();
       this.entities = this.entities.filter((e) => e.z > -4);
-      this.idleChasers(dt);
-    } else {
-      this.idleChasers(dt);
     }
 
     for (const p of this.particles) {
@@ -242,9 +233,9 @@ export class Game {
       const t = persp(playerDrawZ);
       const x = laneX(cam, this.lane, t);
       const gy = groundY(cam, t);
-      const jumpPx = this.y * 34 * t;
-      const scale = Math.max(1.15, 2.05 * t);
-      drawTiger(ctx, x, gy - 22 - jumpPx, scale, {
+      const jumpPx = this.y * 42 * t;
+      const scale = (cam.h * 0.42) / 82;
+      drawTiger(ctx, x, gy - 8 - jumpPx, scale, {
         phase: this.phase,
         airborne: this.y > 0.08,
         lean: this.targetLane - this.lane,
@@ -254,7 +245,7 @@ export class Game {
 
     if (this.mode === "menu") {
       for (const e of drawList) this.drawEntity(e);
-      drawTiger(ctx, cam.w * 0.5, cam.h * 0.4, Math.min(2.6, cam.w / 160), {
+      drawTiger(ctx, cam.w * 0.5, cam.h * 0.58, (cam.h * 0.36) / 82, {
         phase: this.phase,
         airborne: false,
         lean: Math.sin(this.time * 2) * 0.35,
@@ -267,7 +258,9 @@ export class Game {
       if (!playerDrawn) paintPlayer();
     }
 
-    this.drawChasers();
+    if (this.chasing || (this.mode === "dead" && this.chasers.length > 0)) {
+      this.drawChasers();
+    }
 
     for (const p of this.particles) {
       ctx.globalAlpha = Math.max(0, p.life / p.max);
@@ -278,7 +271,7 @@ export class Game {
       ctx.globalAlpha = 1;
     }
 
-    if (this.mode !== "menu") {
+    if (this.chasing) {
       drawThreatVignette(ctx, cam, this.threat());
     }
 
@@ -286,38 +279,36 @@ export class Game {
   }
 
   private threat(): number {
-    const span = CHASE_START - CHASE_CATCH;
-    return Math.max(0, Math.min(1, 1 - (this.chaseGap - CHASE_CATCH) / span));
+    if (!this.chasing) return 0;
+    return Math.max(0.35, Math.min(1, 0.4 + this.chaseAge / CHASE_GIVE_UP));
   }
 
   private tickChase(dt: number): void {
-    const closeness = this.threat();
-    const rate = 0.26 + this.distance / 900 + Math.min(0.35, this.speed * 0.006);
-    this.applyChase(rate * dt);
+    if (!this.chasing) return;
+    this.chaseAge += dt;
+    if (this.chaseAge >= CHASE_GIVE_UP) {
+      this.chasing = false;
+      this.chasers = [];
+      return;
+    }
     this.chaseTick += dt;
     const follow = Math.round(this.lane);
     const first = this.chasers[0];
     const second = this.chasers[1];
-    if (first) {
-      first.targetLane = closeness > 0.12 || this.distance > 28 ? follow : 0;
-    }
-    if (this.chaseTick > 0.95) {
+    if (first) first.targetLane = follow;
+    if (this.chaseTick > 0.85) {
       this.chaseTick = 0;
       const others = [0, 1, 2].filter((l) => l !== follow);
       const pick = others[Math.floor(Math.random() * others.length)] ?? 0;
       if (second) second.targetLane = pick;
     }
-    this.moveChasers(dt, 3.2 + closeness * 7);
-    if (this.chaseGap <= CHASE_CATCH && this.bottleInLane()) this.die();
+    this.moveChasers(dt, 4.2);
   }
 
-  private idleChasers(dt: number): void {
-    const t = this.time;
-    const first = this.chasers[0];
-    const second = this.chasers[1];
-    if (first) first.targetLane = Math.sin(t * 0.8) > 0 ? 0 : 1;
-    if (second) second.targetLane = Math.cos(t * 0.65) > 0 ? 2 : 1;
-    this.moveChasers(dt, 2.4);
+  /** Screenshot / debug: treat as crashing a barrier. */
+  debugHit(): void {
+    if (this.mode !== "playing") return;
+    this.crashObstacle();
   }
 
   private moveChasers(dt: number, speed: number): void {
@@ -327,35 +318,22 @@ export class Game {
     }
   }
 
-  private bottleInLane(): boolean {
-    const pLane = Math.round(this.lane);
-    return this.chasers.some((c) => Math.abs(c.lane - pLane) < 0.42);
-  }
-
-  private applyChase(delta: number): void {
-    this.chaseGap = Math.max(0, Math.min(CHASE_MAX, this.chaseGap - delta));
-  }
-
   private drawChasers(): void {
-    const closeness = this.mode === "menu" ? 0.18 : this.threat();
     const { cam, ctx } = this;
-    // Near-camera band: cops sit in the lower screen and run up toward Korzh.
-    const copZ = 0.08 + easeOut(closeness) * (PLAYER_Z - 0.32);
+    const caught = this.mode === "dead";
+    const copZ = caught ? PLAYER_Z - 0.15 : 0.22;
     for (let i = 0; i < this.chasers.length; i++) {
       const c = this.chasers[i];
       if (!c) continue;
-      const t = persp(copZ + i * 0.05);
+      const t = persp(copZ + i * 0.08);
       const x = laneX(cam, c.lane, t);
       const gy = groundY(cam, t);
-      const behind = (1 - closeness) * 72;
       const step = Math.sin(this.time * 16 + i * 2.2);
-      const hop = Math.abs(step) * (12 + closeness * 10);
+      const hop = Math.abs(step) * 14;
       const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
       const squash = 1 - Math.abs(step) * 0.1;
-      const s = 0.98 + closeness * 0.42;
-      ctx.globalAlpha = 0.9 + closeness * 0.1;
-      drawBottle(ctx, x, gy + behind, s, hop, lean, squash);
-      ctx.globalAlpha = 1;
+      const s = 1.35 + (caught ? 0.25 : 0);
+      drawBottle(ctx, x, gy + 18, s, hop, lean, squash);
     }
   }
 
@@ -366,7 +344,7 @@ export class Game {
     const y = groundY(this.cam, t);
     const s = Math.max(0.12, t);
     if (e.kind === "altushka") {
-      drawAltushka(this.ctx, x, y - 18 * s, s * 1.2, this.time * 6 + e.z);
+      drawAltushka(this.ctx, x, y - 10 * s, s * 0.95, this.time * 6 + e.z);
     } else if (e.kind === "barrier") drawBarrier(this.ctx, x, y, s * 1.05);
     else drawTall(this.ctx, x, y, s * 1.1);
   }
@@ -438,9 +416,7 @@ export class Game {
       if (e.kind !== "altushka" || e.taken || e.missed) continue;
       if (e.z >= PLAYER_Z - 0.85) continue;
       e.missed = true;
-      this.applyChase(MISS_PENALTY);
-      this.sfx.miss();
-      haptic(this.tg, "miss");
+      if (this.chasing) this.chaseAge = Math.max(0, this.chaseAge - 0.8);
     }
   }
 
@@ -455,7 +431,6 @@ export class Game {
         e.taken = true;
         this.coins += 1;
         this.score = Math.floor(this.distance * 2) + this.coins * 10;
-        this.applyChase(-COLLECT_RELIEF);
         this.sfx.coin();
         haptic(this.tg, "coin");
         this.burst(e, ["#ff7ab6", "#1a1a1a", "#ffe3f0"]);
@@ -464,16 +439,31 @@ export class Game {
 
       const jumped = e.kind === "barrier" && this.y >= BARRIER_CLEAR;
       if (jumped) continue;
+      if (this.invuln > 0) {
+        e.hit = true;
+        continue;
+      }
 
       e.hit = true;
-      this.stumbleHit(e.kind === "tall" ? HIT_TALL : HIT_BARRIER);
+      this.crashObstacle();
     }
   }
 
-  private stumbleHit(penalty: number): void {
-    this.stumble = 0.38;
-    this.shake = 0.7;
-    this.applyChase(penalty);
+  private crashObstacle(): void {
+    if (this.chasing) {
+      this.die();
+      return;
+    }
+    this.chasing = true;
+    this.chaseAge = 0;
+    this.invuln = INVULN;
+    this.stumble = 0.4;
+    this.shake = 0.75;
+    const follow = Math.round(this.lane);
+    this.chasers = [
+      { lane: follow, targetLane: follow },
+      { lane: (follow + 2) % 3, targetLane: (follow + 2) % 3 },
+    ];
     this.sfx.stumble();
     haptic(this.tg, "miss");
     const t = persp(PLAYER_Z);
@@ -492,7 +482,6 @@ export class Game {
         size: 3,
       });
     }
-    if (this.chaseGap <= CHASE_CATCH) this.die();
   }
 
   private burst(e: Entity, colors: string[]): void {
@@ -517,7 +506,6 @@ export class Game {
   private die(): void {
     if (this.mode !== "playing") return;
     this.mode = "dead";
-    this.chaseGap = 0;
     this.shake = 1;
     this.sfx.crash();
     haptic(this.tg, "crash");
@@ -542,9 +530,4 @@ export class Game {
       });
     }
   }
-}
-
-function easeOut(t: number): number {
-  const x = Math.max(0, Math.min(1, t));
-  return 1 - (1 - x) * (1 - x);
 }

@@ -67,9 +67,7 @@ function play(): void {
 
 playBtn.addEventListener("click", play);
 retryBtn.addEventListener("click", play);
-if (new URLSearchParams(location.search).has("play")) {
-  play();
-}
+Object.defineProperty(window, "__game", { value: game });
 menuBtn.addEventListener("click", showMenu);
 muteBtn.addEventListener("click", () => {
   sfx.setMuted(!sfx.muted);
@@ -100,6 +98,7 @@ function frame(now: number): void {
     hudScore.textContent = String(snap.score);
     hudCoins.textContent = String(snap.altushky);
     hudBest.textContent = String(snap.best);
+    hudChase.hidden = snap.threat <= 0;
     hudChaseFill.style.width = `${Math.round(snap.threat * 100)}%`;
     hudChase.classList.toggle("hot", snap.threat > 0.72);
   }
@@ -115,3 +114,10 @@ function frame(now: number): void {
 
 requestAnimationFrame(frame);
 showMenu();
+const bootParams = new URLSearchParams(location.search);
+if (bootParams.has("play") || bootParams.has("hit")) {
+  play();
+}
+if (bootParams.has("hit")) {
+  window.setTimeout(() => game.debugHit(), 480);
+}

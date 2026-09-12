@@ -252,11 +252,14 @@ export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: n
     if (z < -3 || z > 86) continue;
     const t = persp(z);
     const s = Math.max(0.12, t);
-    const side = hash(id * 3) > 0.5 ? -1.15 : 3.15;
-    const x = laneX(cam, side, t);
     const y = groundY(cam, t);
-    if (hash(id + 8) > 0.45) drawLamp(ctx, x, y, s, time + id);
-    else drawSunflower(ctx, x, y, s, time + id);
+    for (const side of [-1.2, 3.2] as const) {
+      const x = laneX(cam, side, t);
+      drawKiosk(ctx, x, y, s * 1.15, id + (side > 0 ? 17 : 0));
+    }
+    if (id % 3 === 0) {
+      drawLamp(ctx, laneX(cam, -1.5, t), y, s * 0.9, time + id);
+    }
   }
 }
 
@@ -290,43 +293,38 @@ function drawLamp(
   ctx.restore();
 }
 
-function drawSunflower(
+function drawKiosk(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   s: number,
-  time: number,
+  id: number,
 ): void {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
-  const sway = Math.sin(time * 1.3) * 4;
-  ctx.strokeStyle = "#3f6a24";
-  ctx.lineWidth = 5;
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
-  ctx.moveTo(0, 8);
-  ctx.quadraticCurveTo(sway * 0.4, -30, sway, -62);
-  ctx.stroke();
-  ctx.fillStyle = "#4f8a2c";
-  ctx.beginPath();
-  ctx.ellipse(-10 + sway * 0.3, -28, 10, 5, -0.6, 0, Math.PI * 2);
+  ctx.ellipse(0, 8, 28, 7, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.translate(sway, -66);
-  for (let i = 0; i < 10; i++) {
-    ctx.fillStyle = i % 2 ? "#f2c230" : "#e0a61a";
-    ctx.beginPath();
-    ctx.rotate(0.63);
-    ctx.ellipse(0, -12, 5, 11, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = "#4a2c12";
-  ctx.beginPath();
-  ctx.arc(0, 0, 8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#2c1a0c";
-  ctx.beginPath();
-  ctx.arc(0, 0, 4, 0, Math.PI * 2);
-  ctx.fill();
+  roundBox(ctx, -26, -70, 52, 72, 3, id % 2 ? "#d8c39a" : "#c4b48a");
+  ctx.fillStyle = "#2f6b46";
+  ctx.fillRect(-26, -70, 52, 12);
+  ctx.fillStyle = "#c41e3a";
+  for (let i = 0; i < 6; i++) ctx.fillRect(-26 + i * 9, -82, 7, 12);
+  ctx.fillStyle = "#f4f0e4";
+  for (let i = 0; i < 6; i++) ctx.fillRect(-22 + i * 9, -82, 4, 12);
+  ctx.fillStyle = "#7ec8e8";
+  ctx.fillRect(-16, -52, 32, 20);
+  ctx.strokeStyle = "#2a3540";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-16, -52, 32, 20);
+  ctx.fillStyle = "#f0c14b";
+  ctx.font = "bold 9px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("ПИВО", 0, -58);
+  ctx.fillStyle = "#1c2430";
+  ctx.fillRect(-8, -24, 16, 20);
   ctx.restore();
 }
 
@@ -339,13 +337,13 @@ export function drawAltushka(
 ): void {
   const bob = Math.sin(spin) * 7 * s;
   const img = sprites.altushka;
-  const h = 86 * s;
+  const h = Math.max(14, 40 * s);
   const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.36;
   const w = h * ratio;
   ctx.save();
-  ctx.fillStyle = "rgba(255, 122, 182, 0.28)";
+  ctx.fillStyle = "rgba(255, 122, 182, 0.22)";
   ctx.beginPath();
-  ctx.ellipse(x, y + 6 * s + bob, 14 * s, 5 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, y + 3 * s + bob, 7 * s, 2.4 * s, 0, 0, Math.PI * 2);
   ctx.fill();
   if (img && img.naturalWidth) {
     ctx.drawImage(img, x - w / 2, y - h + bob, w, h);
@@ -460,31 +458,16 @@ export function drawBarrier(
   ctx.ellipse(0, 8, 30, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#6b4a22";
-  ctx.beginPath();
-  ctx.moveTo(-24, -36);
-  ctx.lineTo(18, -42);
-  ctx.lineTo(30, -8);
-  ctx.lineTo(-12, -4);
-  ctx.closePath();
-  ctx.fill();
-
-  roundBox(ctx, -28, -32, 44, 36, 3, "#8a5a28");
-  ctx.fillStyle = "#6e431c";
-  ctx.fillRect(-26, -28, 40, 5);
-  ctx.fillRect(-26, -16, 40, 5);
-  ctx.fillRect(-26, -5, 40, 5);
-  ctx.fillStyle = "#c4b08a";
-  ctx.fillRect(-28, -22, 44, 3);
-  ctx.fillRect(-28, -10, 44, 3);
-  ctx.fillStyle = "#d9a441";
-  ctx.beginPath();
-  ctx.arc(-2, -18, 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#4a2c10";
-  ctx.beginPath();
-  ctx.arc(-2, -18, 2.2, 0, Math.PI * 2);
-  ctx.fill();
+  // Low Subway-style hurdle — jump it.
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(-6, -28, 5, 30);
+  ctx.fillRect(10, -28, 5, 30);
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i % 2 ? "#f0c14b" : "#1a1a1a";
+    ctx.fillRect(-22 + i * 10, -32, 10, 10);
+  }
+  ctx.fillStyle = "#c41e3a";
+  ctx.fillRect(-24, -22, 52, 5);
   ctx.restore();
 }
 
@@ -502,28 +485,15 @@ export function drawTall(
   ctx.ellipse(0, 8, 26, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  roundBox(ctx, -22, -78, 44, 80, 4, "#d8c39a");
-  ctx.fillStyle = "#2f6b46";
-  ctx.fillRect(-22, -78, 44, 14);
-  ctx.fillStyle = "#c41e3a";
-  for (let i = 0; i < 5; i++) {
-    ctx.fillRect(-22 + i * 9, -92, 7, 14);
-  }
-  ctx.fillStyle = "#f4f0e4";
-  for (let i = 0; i < 5; i++) {
-    ctx.fillRect(-18 + i * 9, -92, 4, 14);
-  }
-  ctx.fillStyle = "#7ec8e8";
-  ctx.fillRect(-14, -58, 28, 22);
-  ctx.strokeStyle = "#2a3540";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(-14, -58, 28, 22);
-  ctx.fillStyle = "#1c2430";
-  ctx.fillRect(-10, -28, 20, 18);
+  // Tall lane blocker — cannot jump.
+  ctx.fillStyle = "#3a3a40";
+  ctx.fillRect(-20, -96, 40, 98);
   ctx.fillStyle = "#f0c14b";
-  ctx.font = "bold 10px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("24", 0, -68);
+  for (let i = 0; i < 8; i++) {
+    ctx.fillRect(-20, -90 + i * 12, 40, 4);
+  }
+  ctx.fillStyle = "#c41e3a";
+  ctx.fillRect(-22, -100, 44, 8);
   ctx.restore();
 }
 
@@ -555,16 +525,20 @@ export interface TigerPose {
   dead?: boolean;
 }
 
-/** Horizontal run sheet: 6 frames × 157×256, served from webapp/public/. */
-const RUN_FRAME_COUNT = 6;
+/** Horizontal run sheet from КоржВидео, served from webapp/public/. */
 const RUN_FRAME_W = 157;
 const RUN_FRAME_H = 256;
 const RUN_SHEET_SRC = `${import.meta.env.BASE_URL}korzh-run-sheet.png`;
 
-/** Local-space height of the old vector tiger (ears to paws), used to match on-screen size. */
+/** Local-space height used to match on-screen size. */
 const RUNNER_LOCAL_H = 82;
 /** Same ground contact as the old tiger shadow / hind paws. */
 const RUNNER_FEET_Y = 38;
+
+function sheetFrameCount(sheet: HTMLImageElement): number {
+  const guess = Math.round(sheet.naturalWidth / (sheet.naturalHeight * (RUN_FRAME_W / RUN_FRAME_H)));
+  return Math.min(8, Math.max(4, guess || 5));
+}
 
 let runSheet: HTMLImageElement | null = null;
 let runSheetState: "idle" | "loading" | "ready" | "error" = "idle";
@@ -603,10 +577,10 @@ function ensureRunSheet(): HTMLImageElement | null {
 
 ensureRunSheet();
 
-function runFrameIndex(pose: TigerPose): number {
+function runFrameIndex(pose: TigerPose, frames: number): number {
   if (pose.airborne) return 0;
-  const i = Math.floor(pose.phase) % RUN_FRAME_COUNT;
-  return i < 0 ? i + RUN_FRAME_COUNT : i;
+  const i = Math.floor(pose.phase) % frames;
+  return i < 0 ? i + frames : i;
 }
 
 export function drawTiger(
@@ -633,10 +607,10 @@ export function drawTiger(
   ctx.fill();
 
   if (sheet && sheet.naturalWidth > 0) {
-    const frames = RUN_FRAME_COUNT;
+    const frames = sheetFrameCount(sheet);
     const fw = sheet.naturalWidth / frames || RUN_FRAME_W;
     const fh = sheet.naturalHeight || RUN_FRAME_H;
-    const frame = runFrameIndex(pose);
+    const frame = runFrameIndex(pose, frames);
     const localW = RUNNER_LOCAL_H * (fw / fh);
     const destX = -localW / 2;
     const destY = RUNNER_FEET_Y - RUNNER_LOCAL_H;
