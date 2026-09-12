@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="uk">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#071016" />
+    <meta name="theme-color" content="#0b1224" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Tiger Runner</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -23,7 +23,17 @@
           <div class="hud-sub">SCORE</div>
         </div>
         <div class="hud-mid">
-          <div class="coin-chip" id="hud-coins">0</div>
+          <div class="alt-chip" id="hud-alt-chip">
+            <img class="alt-chip-icon" id="hud-alt-icon" alt="" />
+            <div>
+              <div class="alt-chip-count" id="hud-coins">0</div>
+              <div class="alt-chip-label">альтухи · altushky</div>
+            </div>
+          </div>
+          <div class="chase-meter" id="hud-chase">
+            <div class="chase-meter-fill" id="hud-chase-fill"></div>
+            <span>Козацька рада</span>
+          </div>
         </div>
         <div class="hud-right">
           <div class="hud-score" id="hud-best">0</div>
@@ -37,17 +47,18 @@
         <div class="panel" id="panel-menu">
           <div class="logo-mark" aria-hidden="true">🐅</div>
           <h1>Tiger Runner</h1>
-          <p class="tagline">Swipe the lanes. Jump the crates. Chase the coins.</p>
+          <p class="tagline">Три смуги, стрибок, альтушки. Не дай пляшкам Козацької ради тебе догнати.</p>
           <ul class="howto">
             <li>← → swipe / tap sides / arrows</li>
             <li>↑ swipe up / tap center / space to jump</li>
+            <li>Збирай альтух · crates = stumble · bottles catch you</li>
           </ul>
           <button id="play-btn" class="primary" type="button">Play · Грати</button>
           <p class="best-line">Best: <span id="menu-best">0</span></p>
         </div>
 
         <div class="panel" id="panel-over" hidden>
-          <h2>Game Over</h2>
+          <h2>Спіймали!</h2>
           <p class="over-score" id="over-score">0</p>
           <p class="over-meta" id="over-meta"></p>
           <button id="retry-btn" class="primary" type="button">Restart · Знову</button>

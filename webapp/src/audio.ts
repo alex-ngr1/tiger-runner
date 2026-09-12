@@ -22,6 +22,15 @@ export class Sfx {
     this.beep(1320, 0.09, "sine", 0.05, 0.04);
   }
 
+  miss(): void {
+    this.beep(320, 0.07, "square", 0.05);
+    this.beep(180, 0.09, "triangle", 0.04, 0.05);
+  }
+
+  stumble(): void {
+    this.sweep(140, 50, 0.16, 0.1, "sawtooth");
+  }
+
   jump(): void {
     this.sweep(220, 520, 0.12, 0.07);
   }

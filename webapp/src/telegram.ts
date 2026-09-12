@@ -7,8 +7,8 @@ export function initTelegram(): TelegramWebApp | null {
   tg.ready();
   tg.expand();
   try {
-    tg.setHeaderColor?.("#071016");
-    tg.setBackgroundColor?.("#071016");
+    tg.setHeaderColor?.("#0b1224");
+    tg.setBackgroundColor?.("#0b1224");
     tg.disableVerticalSwipes?.();
   } catch {
     // Older Telegram clients may not support every method.
@@ -18,13 +18,14 @@ export function initTelegram(): TelegramWebApp | null {
 
 export function haptic(
   tg: TelegramWebApp | null,
-  kind: "lane" | "jump" | "coin" | "crash",
+  kind: "lane" | "jump" | "coin" | "crash" | "miss",
 ): void {
   const h = tg?.HapticFeedback;
   if (!h) return;
   try {
     if (kind === "coin") h.notificationOccurred("success");
     else if (kind === "crash") h.notificationOccurred("error");
+    else if (kind === "miss") h.notificationOccurred("warning");
     else h.impactOccurred(kind === "jump" ? "medium" : "light");
   } catch {
     /* ignore */

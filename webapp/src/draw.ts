@@ -1,3 +1,5 @@
+import { sprites } from "./sprites";
+
 export const FUR = "#f08c2e";
 export const FUR_DARK = "#c65d12";
 export const STRIPE = "#1c140e";
@@ -14,8 +16,8 @@ export function makeCam(w: number, h: number): Cam {
   return {
     w,
     h,
-    horizon: h * 0.28,
-    nearY: h * 0.76,
+    horizon: h * 0.3,
+    nearY: h * 0.78,
   };
 }
 
@@ -32,57 +34,153 @@ export function groundY(cam: Cam, t: number): number {
   return cam.horizon + (cam.nearY - cam.horizon) * Math.min(1.15, t);
 }
 
+function hash(n: number): number {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 export function drawSky(ctx: CanvasRenderingContext2D, cam: Cam, time: number): void {
   const g = ctx.createLinearGradient(0, 0, 0, cam.h);
-  g.addColorStop(0, "#071016");
-  g.addColorStop(0.28, "#123043");
-  g.addColorStop(0.55, "#c45c28");
-  g.addColorStop(1, "#2a150c");
+  g.addColorStop(0, "#0b1224");
+  g.addColorStop(0.22, "#1b2a4a");
+  g.addColorStop(0.42, "#6a3d58");
+  g.addColorStop(0.58, "#e07a3a");
+  g.addColorStop(0.72, "#3d2a18");
+  g.addColorStop(1, "#1a140e");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, cam.w, cam.h);
 
-  ctx.fillStyle = "rgba(255, 210, 130, 0.85)";
+  ctx.fillStyle = "rgba(255, 236, 190, 0.95)";
   ctx.beginPath();
-  ctx.arc(cam.w * 0.78, cam.horizon - 18, 26, 0, Math.PI * 2);
+  ctx.arc(cam.w * 0.78, cam.horizon - 36, 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 200, 120, 0.16)";
+  ctx.beginPath();
+  ctx.arc(cam.w * 0.78, cam.horizon - 36, 48, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#08140f";
-  const base = cam.horizon + 8;
-  ctx.beginPath();
-  ctx.moveTo(0, base + 40);
-  for (let x = 0; x <= cam.w; x += 18) {
-    const n = Math.sin(x * 0.04 + time * 0.15) * 10 + Math.sin(x * 0.11) * 16;
-    ctx.lineTo(x, base - 28 - n);
+  ctx.fillStyle = "rgba(255, 248, 220, 0.85)";
+  for (let i = 0; i < 28; i++) {
+    const sx = hash(i + 3) * cam.w;
+    const sy = hash(i + 19) * (cam.horizon - 18);
+    const tw = 0.55 + 0.45 * Math.sin(time * 1.4 + i * 1.7);
+    ctx.globalAlpha = 0.25 + tw * 0.6;
+    ctx.fillRect(sx, sy, 1.6, 1.6);
   }
-  ctx.lineTo(cam.w, base + 80);
-  ctx.lineTo(0, base + 80);
+  ctx.globalAlpha = 1;
+
+  drawHorizonTown(ctx, cam);
+  drawHorizonSunflowers(ctx, cam, time);
+}
+
+function drawHorizonTown(ctx: CanvasRenderingContext2D, cam: Cam): void {
+  const base = cam.horizon + 6;
+  const blocks = [
+    { x: 0.04, w: 0.13, h: 52, hue: "#243044" },
+    { x: 0.16, w: 0.1, h: 38, hue: "#1c2838" },
+    { x: 0.28, w: 0.15, h: 64, hue: "#2a3548" },
+    { x: 0.55, w: 0.12, h: 46, hue: "#223046" },
+    { x: 0.68, w: 0.18, h: 70, hue: "#1a2436" },
+    { x: 0.88, w: 0.12, h: 42, hue: "#263248" },
+  ];
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (!b) continue;
+    const x = b.x * cam.w;
+    const w = b.w * cam.w;
+    const y = base - b.h;
+    ctx.fillStyle = b.hue;
+    ctx.fillRect(x, y, w, b.h + 8);
+    ctx.fillStyle = "#151c28";
+    ctx.fillRect(x, y, w, 4);
+    const cols = 4;
+    const rows = Math.max(3, Math.floor(b.h / 10));
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const on = hash(i * 40 + r * 7 + c) > 0.28;
+        ctx.fillStyle = on ? "#f4d27a" : "#121820";
+        ctx.fillRect(x + 5 + c * (w / cols), y + 8 + r * 8, 3.2, 3.6);
+      }
+    }
+  }
+
+  ctx.fillStyle = "#1a2230";
+  ctx.beginPath();
+  ctx.moveTo(cam.w * 0.46, base);
+  ctx.lineTo(cam.w * 0.5, base - 34);
+  ctx.lineTo(cam.w * 0.54, base);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cam.w * 0.5, base - 38, 7, Math.PI, 0);
   ctx.fill();
 }
 
-export function drawTrack(
-  ctx: CanvasRenderingContext2D,
-  cam: Cam,
-  distance: number,
-): void {
-  const leftFar = laneX(cam, -0.65, persp(88));
-  const rightFar = laneX(cam, 2.65, persp(88));
-  const leftNear = laneX(cam, -0.65, persp(0));
-  const rightNear = laneX(cam, 2.65, persp(0));
+function drawHorizonSunflowers(ctx: CanvasRenderingContext2D, cam: Cam, time: number): void {
+  const base = cam.horizon + 10;
+  ctx.fillStyle = "#1c2a14";
+  ctx.beginPath();
+  ctx.moveTo(0, base + 18);
+  for (let x = 0; x <= cam.w; x += 14) {
+    const n = Math.sin(x * 0.05 + time * 0.12) * 6 + 10;
+    ctx.lineTo(x, base - n);
+  }
+  ctx.lineTo(cam.w, base + 28);
+  ctx.lineTo(0, base + 28);
+  ctx.fill();
+
+  for (let i = 0; i < 11; i++) {
+    const x = (i / 11) * cam.w + 8;
+    const sway = Math.sin(time * 0.8 + i) * 2;
+    ctx.strokeStyle = "#2d441c";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, base + 4);
+    ctx.lineTo(x + sway, base - 16);
+    ctx.stroke();
+    ctx.fillStyle = "#d4a017";
+    ctx.beginPath();
+    ctx.arc(x + sway, base - 18, 4.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#4a2c10";
+    ctx.beginPath();
+    ctx.arc(x + sway, base - 18, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: number): void {
+  const leftFar = laneX(cam, -0.72, persp(88));
+  const rightFar = laneX(cam, 2.72, persp(88));
+  const leftNear = laneX(cam, -0.72, persp(0));
+  const rightNear = laneX(cam, 2.72, persp(0));
+
+  ctx.beginPath();
+  ctx.moveTo(0, cam.horizon + 8);
+  ctx.lineTo(cam.w, cam.horizon + 8);
+  ctx.lineTo(cam.w, cam.h);
+  ctx.lineTo(0, cam.h);
+  ctx.closePath();
+  const grass = ctx.createLinearGradient(0, cam.horizon, 0, cam.h);
+  grass.addColorStop(0, "#3a5428");
+  grass.addColorStop(1, "#243818");
+  ctx.fillStyle = grass;
+  ctx.fill();
 
   ctx.beginPath();
   ctx.moveTo(leftFar, cam.horizon);
   ctx.lineTo(rightFar, cam.horizon);
-  ctx.lineTo(rightNear, cam.nearY + 30);
-  ctx.lineTo(leftNear, cam.nearY + 30);
+  ctx.lineTo(rightNear, cam.nearY + 36);
+  ctx.lineTo(leftNear, cam.nearY + 36);
   ctx.closePath();
   const soil = ctx.createLinearGradient(0, cam.horizon, 0, cam.h);
-  soil.addColorStop(0, "#4a3118");
-  soil.addColorStop(1, "#2b1a0d");
+  soil.addColorStop(0, "#3f3c39");
+  soil.addColorStop(0.45, "#2b2927");
+  soil.addColorStop(1, "#1c1a18");
   ctx.fillStyle = soil;
   ctx.fill();
 
   for (let lane = 0; lane < 3; lane++) {
-    const zSteps = 14;
+    const zSteps = 10;
     for (let i = 0; i < zSteps; i++) {
       const z0 = (i / zSteps) * 90;
       const z1 = ((i + 1) / zSteps) * 90;
@@ -94,21 +192,39 @@ export function drawTrack(
       const x1b = laneX(cam, lane + 0.42, t1);
       const y0 = groundY(cam, t0);
       const y1 = groundY(cam, t1);
-      const stripe = Math.floor((distance * 0.35 + i) % 2) === 0;
+      const stripe = Math.floor((distance * 0.28 + i) % 2) === 0;
       ctx.beginPath();
       ctx.moveTo(x0a, y0);
       ctx.lineTo(x0b, y0);
       ctx.lineTo(x1b, y1);
       ctx.lineTo(x1a, y1);
       ctx.closePath();
-      ctx.fillStyle = stripe ? "#5c3b1a" : "#4e3116";
+      ctx.fillStyle = stripe ? "#35322f" : "#2a2826";
       ctx.fill();
     }
   }
 
-  ctx.strokeStyle = "rgba(255, 214, 90, 0.55)";
-  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
   for (const edge of [0.5, 1.5]) {
+    ctx.beginPath();
+    for (let z = 0; z <= 90; z += 3) {
+      const t = persp(z);
+      const x = laneX(cam, edge, t);
+      const y = groundY(cam, t);
+      if (z === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = "rgba(240, 200, 70, 0.8)";
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([14, 16]);
+    ctx.lineDashOffset = -distance * 1.6;
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = "rgba(236, 232, 220, 0.55)";
+  ctx.lineWidth = 3;
+  for (const edge of [-0.5, 2.5]) {
     ctx.beginPath();
     for (let z = 0; z <= 90; z += 4) {
       const t = persp(z);
@@ -121,34 +237,195 @@ export function drawTrack(
   }
 }
 
-export function drawCoin(
+export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: number, time: number): void {
+  const spacing = 16;
+  const first = Math.floor(distance / spacing) - 1;
+  for (let i = 0; i < 8; i++) {
+    const id = first + i;
+    const z = id * spacing - distance + 10;
+    if (z < -3 || z > 86) continue;
+    const t = persp(z);
+    const s = Math.max(0.12, t);
+    const side = hash(id * 3) > 0.5 ? -1.15 : 3.15;
+    const x = laneX(cam, side, t);
+    const y = groundY(cam, t);
+    if (hash(id + 8) > 0.45) drawLamp(ctx, x, y, s, time + id);
+    else drawSunflower(ctx, x, y, s, time + id);
+  }
+}
+
+function drawLamp(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  time: number,
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.beginPath();
+  ctx.ellipse(0, 6, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2c3038";
+  ctx.fillRect(-3, -78, 6, 80);
+  ctx.fillStyle = "#3d424c";
+  ctx.fillRect(-14, -82, 18, 5);
+  const glow = 0.28 + 0.08 * Math.sin(time * 3);
+  ctx.fillStyle = `rgba(255, 210, 120, ${glow})`;
+  ctx.beginPath();
+  ctx.arc(-12, -78, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#f6d889";
+  ctx.beginPath();
+  ctx.arc(-12, -78, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSunflower(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  time: number,
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  const sway = Math.sin(time * 1.3) * 4;
+  ctx.strokeStyle = "#3f6a24";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(0, 8);
+  ctx.quadraticCurveTo(sway * 0.4, -30, sway, -62);
+  ctx.stroke();
+  ctx.fillStyle = "#4f8a2c";
+  ctx.beginPath();
+  ctx.ellipse(-10 + sway * 0.3, -28, 10, 5, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(sway, -66);
+  for (let i = 0; i < 10; i++) {
+    ctx.fillStyle = i % 2 ? "#f2c230" : "#e0a61a";
+    ctx.beginPath();
+    ctx.rotate(0.63);
+    ctx.ellipse(0, -12, 5, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#4a2c12";
+  ctx.beginPath();
+  ctx.arc(0, 0, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#2c1a0c";
+  ctx.beginPath();
+  ctx.arc(0, 0, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+export function drawAltushka(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   s: number,
   spin: number,
 ): void {
-  const squash = 0.35 + Math.abs(Math.cos(spin)) * 0.65;
+  const bob = Math.sin(spin) * 7 * s;
+  const img = sprites.altushka;
+  const h = 58 * s;
+  const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.36;
+  const w = h * ratio;
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 122, 182, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 6 * s + bob, 14 * s, 5 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (img && img.naturalWidth) {
+    ctx.drawImage(img, x - w / 2, y - h + bob, w, h);
+  } else {
+    drawAltushkaFallback(ctx, x, y + bob, s);
+  }
+  ctx.restore();
+}
+
+function drawAltushkaFallback(ctx: CanvasRenderingContext2D, x: number, y: number, s: number): void {
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(s * squash, s);
-  ctx.fillStyle = "#b8860b";
+  ctx.scale(s, s);
+  ctx.fillStyle = "#111";
   ctx.beginPath();
-  ctx.ellipse(0, 3, 12, 12, 0, 0, Math.PI * 2);
+  ctx.arc(0, -38, 10, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#ffd60a";
+  ctx.fillStyle = "#f2b8c8";
   ctx.beginPath();
-  ctx.ellipse(0, 0, 12, 12, 0, 0, Math.PI * 2);
+  ctx.arc(-6, -40, 3.2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#fff3a0";
+  ctx.fillStyle = "#151515";
+  roundBox(ctx, -12, -30, 24, 20, 6, "#151515");
+  ctx.fillStyle = "#2a2a2a";
+  ctx.fillRect(-8, -10, 16, 7);
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-5 + i * 5, -2);
+    ctx.lineTo(-5 + i * 5, 8);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "#111";
+  ctx.fillRect(-7, 8, 6, 5);
+  ctx.fillRect(1, 8, 6, 5);
+  ctx.restore();
+}
+
+export function drawBottle(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  hop: number,
+): void {
+  const img = sprites.bottle;
+  const h = 84 * s;
+  const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.55;
+  const w = h * ratio;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 4 * s, 16 * s, 5 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (img && img.naturalWidth) {
+    ctx.drawImage(img, x - w / 2, y - h - hop, w, h);
+  } else {
+    drawBottleFallback(ctx, x, y - hop, s);
+  }
+  ctx.restore();
+}
+
+function drawBottleFallback(ctx: CanvasRenderingContext2D, x: number, y: number, s: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  ctx.fillStyle = "rgba(190, 220, 230, 0.55)";
+  roundBox(ctx, -16, -62, 32, 58, 6, "rgba(190, 220, 230, 0.55)");
+  ctx.strokeStyle = "rgba(255,255,255,0.65)";
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 7, 7, 0, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.beginPath();
-  ctx.ellipse(-3, -3, 3, 2, -0.5, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.strokeRect(-16, -62, 32, 58);
+  ctx.fillStyle = "#c41e3a";
+  ctx.fillRect(-13, -52, 26, 30);
+  ctx.strokeStyle = "#d4b24a";
+  ctx.strokeRect(-13, -52, 26, 30);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(-4, -46, 10, 8);
+  ctx.fillStyle = "#e6c86a";
+  ctx.font = "bold 6px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("RADA", 0, -32);
+  ctx.fillStyle = "#8a5a28";
+  ctx.fillRect(-5, -70, 10, 8);
+  ctx.fillStyle = "#d4b24a";
+  ctx.fillRect(-7, -64, 14, 3);
   ctx.restore();
 }
 
@@ -161,18 +438,36 @@ export function drawBarrier(
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(s, s);
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
-  ctx.ellipse(0, 6, 28, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 8, 30, 8, 0, 0, Math.PI * 2);
   ctx.fill();
-  roundBox(ctx, -26, -34, 52, 38, 6, "#8b4e1a");
-  ctx.fillStyle = "#6e3910";
-  ctx.fillRect(-22, -28, 8, 26);
-  ctx.fillRect(-4, -28, 8, 26);
-  ctx.fillRect(14, -28, 8, 26);
-  ctx.fillStyle = "#c4c4c4";
-  ctx.fillRect(-28, -18, 56, 6);
-  ctx.fillRect(-28, -8, 56, 6);
+
+  ctx.fillStyle = "#6b4a22";
+  ctx.beginPath();
+  ctx.moveTo(-24, -36);
+  ctx.lineTo(18, -42);
+  ctx.lineTo(30, -8);
+  ctx.lineTo(-12, -4);
+  ctx.closePath();
+  ctx.fill();
+
+  roundBox(ctx, -28, -32, 44, 36, 3, "#8a5a28");
+  ctx.fillStyle = "#6e431c";
+  ctx.fillRect(-26, -28, 40, 5);
+  ctx.fillRect(-26, -16, 40, 5);
+  ctx.fillRect(-26, -5, 40, 5);
+  ctx.fillStyle = "#c4b08a";
+  ctx.fillRect(-28, -22, 44, 3);
+  ctx.fillRect(-28, -10, 44, 3);
+  ctx.fillStyle = "#d9a441";
+  ctx.beginPath();
+  ctx.arc(-2, -18, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#4a2c10";
+  ctx.beginPath();
+  ctx.arc(-2, -18, 2.2, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -187,29 +482,53 @@ export function drawTall(
   ctx.scale(s, s);
   ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
-  ctx.ellipse(0, 8, 22, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 8, 26, 8, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#3d4f3a";
-  ctx.beginPath();
-  ctx.moveTo(-16, 6);
-  ctx.lineTo(-20, -88);
-  ctx.lineTo(0, -108);
-  ctx.lineTo(22, -86);
-  ctx.lineTo(16, 6);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#2a3729";
-  ctx.beginPath();
-  ctx.moveTo(-6, 6);
-  ctx.lineTo(-8, -80);
-  ctx.lineTo(6, -80);
-  ctx.lineTo(8, 6);
-  ctx.fill();
-  ctx.fillStyle = "#1e1510";
-  ctx.fillRect(-10, -70, 5, 22);
-  ctx.fillRect(2, -50, 6, 18);
-  ctx.fillRect(-4, -30, 4, 16);
+
+  roundBox(ctx, -22, -78, 44, 80, 4, "#d8c39a");
+  ctx.fillStyle = "#2f6b46";
+  ctx.fillRect(-22, -78, 44, 14);
+  ctx.fillStyle = "#c41e3a";
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(-22 + i * 9, -92, 7, 14);
+  }
+  ctx.fillStyle = "#f4f0e4";
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(-18 + i * 9, -92, 4, 14);
+  }
+  ctx.fillStyle = "#7ec8e8";
+  ctx.fillRect(-14, -58, 28, 22);
+  ctx.strokeStyle = "#2a3540";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-14, -58, 28, 22);
+  ctx.fillStyle = "#1c2430";
+  ctx.fillRect(-10, -28, 20, 18);
+  ctx.fillStyle = "#f0c14b";
+  ctx.font = "bold 10px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("24", 0, -68);
   ctx.restore();
+}
+
+export function drawThreatVignette(
+  ctx: CanvasRenderingContext2D,
+  cam: Cam,
+  threat: number,
+): void {
+  const a = Math.min(0.55, (threat - 0.35) * 0.9);
+  if (a <= 0) return;
+  const g = ctx.createRadialGradient(
+    cam.w * 0.5,
+    cam.h * 0.55,
+    cam.h * 0.2,
+    cam.w * 0.5,
+    cam.h * 0.6,
+    cam.h * 0.78,
+  );
+  g.addColorStop(0, "rgba(0,0,0,0)");
+  g.addColorStop(1, `rgba(110, 8, 18, ${a})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, cam.w, cam.h);
 }
 
 export interface TigerPose {

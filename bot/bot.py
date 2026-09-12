@@ -70,7 +70,8 @@ async def on_startup(bot: Bot) -> None:
 async def cmd_start(message: Message) -> None:
     await message.answer(
         "🐅 <b>Tiger Runner</b>\n"
-        "Endless 3-lane runner — swipe, jump, grab coins.\n\n"
+        "Endless 3-lane runner — swipe, jump, collect альтушки, "
+        "don’t get caught by Kozatska Rada.\n\n"
         "Натисни <b>Грати</b> / tap <b>Play</b> to open the Mini App.",
         reply_markup=webapp_keyboard(),
     )

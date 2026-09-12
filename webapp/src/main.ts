@@ -1,6 +1,7 @@
 import { Sfx } from "./audio";
 import { bindInput } from "./input";
 import { Game } from "./game";
+import { altHudUrl, loadSprites } from "./sprites";
 import { initTelegram } from "./telegram";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
@@ -13,6 +14,11 @@ const panelOver = document.querySelector<HTMLElement>("#panel-over")!;
 const hud = document.querySelector<HTMLElement>("#hud")!;
 const hudScore = document.querySelector<HTMLElement>("#hud-score")!;
 const hudCoins = document.querySelector<HTMLElement>("#hud-coins")!;
+const hudAltIcon = document.querySelector<HTMLImageElement>("#hud-alt-icon")!;
+const hudChase = document.querySelector<HTMLElement>("#hud-chase")!;
+const hudChaseFill = document.querySelector<HTMLElement>("#hud-chase-fill")!;
+hudAltIcon.src = altHudUrl;
+void loadSprites();
 const hudBest = document.querySelector<HTMLElement>("#hud-best")!;
 const menuBest = document.querySelector<HTMLElement>("#menu-best")!;
 const overScore = document.querySelector<HTMLElement>("#over-score")!;
@@ -50,7 +56,7 @@ function showOver(): void {
   panelOver.hidden = false;
   hud.hidden = false;
   overScore.textContent = String(snap.score);
-  overMeta.textContent = `Coins ${snap.coins} · Distance ${Math.floor(snap.distance)}m · Best ${snap.best}`;
+  overMeta.textContent = `Альтухи ${snap.altushky} · Distance ${Math.floor(snap.distance)}m · Best ${snap.best}`;
 }
 
 function play(): void {
@@ -89,8 +95,10 @@ function frame(now: number): void {
   if (game.mode !== "menu") {
     const snap = game.hud();
     hudScore.textContent = String(snap.score);
-    hudCoins.textContent = String(snap.coins);
+    hudCoins.textContent = String(snap.altushky);
     hudBest.textContent = String(snap.best);
+    hudChaseFill.style.width = `${Math.round(snap.threat * 100)}%`;
+    hudChase.classList.toggle("hot", snap.threat > 0.72);
   }
   if (game.mode === "playing") {
     deadShown = false;
