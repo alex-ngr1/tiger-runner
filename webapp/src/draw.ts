@@ -244,23 +244,28 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: num
 }
 
 export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: number, time: number): void {
-  const spacing = 20;
+  const spacing = 24;
   const first = Math.floor(distance / spacing) - 1;
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 6; i++) {
     const id = first + i;
-    const z = id * spacing - distance + 12;
-    if (z < -4 || z > 80) continue;
+    const z = id * spacing - distance + 16;
+    if (z < 6 || z > 78) continue;
     const t = persp(z);
     const y = groundY(cam, t);
-    const shopH = cam.h * 0.32 * Math.max(0.16, t / persp(2.2));
-    const leftX = laneX(cam, -1.72, t);
-    const rightX = laneX(cam, 3.72, t);
-    // Alternate kiosk / trailer so both verges read as пивнухи, never on-lane.
+    const shopH = Math.min(cam.h * 0.28, cam.h * 0.42 * t);
+    const leftX = laneX(cam, -2.15, t);
+    const rightX = laneX(cam, 4.15, t);
+    const roadL = laneX(cam, -0.52, t);
+    const roadR = laneX(cam, 2.52, t);
     const leftKiosk = id % 2 === 0;
-    drawShopSprite(ctx, leftKiosk ? sprites.kiosk : sprites.trailer, leftX, y, shopH);
-    drawShopSprite(ctx, leftKiosk ? sprites.trailer : sprites.kiosk, rightX, y, shopH * 0.92);
+    if (leftX + shopH * 0.42 < roadL) {
+      drawShopSprite(ctx, leftKiosk ? sprites.kiosk : sprites.trailer, leftX, y, shopH);
+    }
+    if (rightX - shopH * 0.42 > roadR) {
+      drawShopSprite(ctx, leftKiosk ? sprites.trailer : sprites.kiosk, rightX, y, shopH * 0.92);
+    }
     if (id % 3 === 0) {
-      drawLamp(ctx, laneX(cam, -1.62, t), y, Math.max(0.16, t) * 0.95, time + id);
+      drawLamp(ctx, laneX(cam, -2.4, t), y, Math.max(0.16, t) * 0.9, time + id);
     }
   }
 }

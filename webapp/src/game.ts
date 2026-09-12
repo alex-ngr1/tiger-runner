@@ -310,10 +310,10 @@ export class Game {
     this.crashObstacle();
   }
 
-  /** Screenshot: plant near-camera hurdles beside Korzh without an instant crash. */
+  /** Screenshot: plant hurdles ahead / beside Korzh without an instant crash. */
   debugHurdle(): void {
     this.entities = this.entities.filter((e) => e.kind !== "barrier" && e.kind !== "tall");
-    this.entities.push(this.make("barrier", 0, 2.4), this.make("barrier", 2, 3.2));
+    this.entities.push(this.make("barrier", 1, 8.2), this.make("barrier", 0, 6.4));
   }
 
   private moveChasers(dt: number, speed: number): void {
