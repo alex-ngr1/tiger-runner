@@ -346,10 +346,10 @@ export class Game {
       const ez = Math.max(-0.2, z + i * 0.1);
       const t = persp(ez);
       const x = laneX(this.cam, c.lane, t);
-      const y = groundY(this.cam, t) + (1 - closeness) * 36;
-      const s = Math.max(0.42, t * (0.9 + closeness * 0.55));
-      this.ctx.globalAlpha = 0.62 + closeness * 0.38;
-      drawBottle(this.ctx, x, y, s * 1.25, hop);
+      const y = groundY(this.cam, t) + (1 - closeness) * 78;
+      const s = Math.max(0.48, t * (0.72 + closeness * 0.85));
+      this.ctx.globalAlpha = 0.72 + closeness * 0.28;
+      drawBottle(this.ctx, x, y, s * 1.35, hop);
       this.ctx.globalAlpha = 1;
     }
   }

@@ -67,6 +67,9 @@ function play(): void {
 
 playBtn.addEventListener("click", play);
 retryBtn.addEventListener("click", play);
+if (new URLSearchParams(location.search).has("play")) {
+  play();
+}
 menuBtn.addEventListener("click", showMenu);
 muteBtn.addEventListener("click", () => {
   sfx.setMuted(!sfx.muted);

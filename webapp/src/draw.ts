@@ -40,23 +40,29 @@ function hash(n: number): number {
 }
 
 export function drawSky(ctx: CanvasRenderingContext2D, cam: Cam, time: number): void {
+  const hz = cam.horizon / cam.h;
   const g = ctx.createLinearGradient(0, 0, 0, cam.h);
-  g.addColorStop(0, "#0b1224");
-  g.addColorStop(0.22, "#1b2a4a");
-  g.addColorStop(0.42, "#6a3d58");
-  g.addColorStop(0.58, "#e07a3a");
-  g.addColorStop(0.72, "#3d2a18");
+  g.addColorStop(0, "#0a1020");
+  g.addColorStop(Math.max(0.02, hz - 0.22), "#1a2a4c");
+  g.addColorStop(Math.max(0.08, hz - 0.1), "#7a3d5c");
+  g.addColorStop(Math.max(0.12, hz - 0.02), "#f08a40");
+  g.addColorStop(hz + 0.02, "#c45c28");
   g.addColorStop(1, "#1a140e");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, cam.w, cam.h);
 
+  ctx.fillStyle = "rgba(255, 220, 140, 0.28)";
+  ctx.beginPath();
+  ctx.ellipse(cam.w * 0.55, cam.horizon - 4, cam.w * 0.55, 26, 0, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.fillStyle = "rgba(255, 236, 190, 0.95)";
   ctx.beginPath();
-  ctx.arc(cam.w * 0.78, cam.horizon - 36, 22, 0, Math.PI * 2);
+  ctx.arc(cam.w * 0.78, cam.horizon - 28, 20, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "rgba(255, 200, 120, 0.16)";
+  ctx.fillStyle = "rgba(255, 200, 120, 0.2)";
   ctx.beginPath();
-  ctx.arc(cam.w * 0.78, cam.horizon - 36, 48, 0, Math.PI * 2);
+  ctx.arc(cam.w * 0.78, cam.horizon - 28, 44, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = "rgba(255, 248, 220, 0.85)";
@@ -75,13 +81,13 @@ export function drawSky(ctx: CanvasRenderingContext2D, cam: Cam, time: number): 
 
 function drawHorizonTown(ctx: CanvasRenderingContext2D, cam: Cam): void {
   const base = cam.horizon + 6;
-  const blocks = [
-    { x: 0.04, w: 0.13, h: 52, hue: "#243044" },
-    { x: 0.16, w: 0.1, h: 38, hue: "#1c2838" },
-    { x: 0.28, w: 0.15, h: 64, hue: "#2a3548" },
-    { x: 0.55, w: 0.12, h: 46, hue: "#223046" },
-    { x: 0.68, w: 0.18, h: 70, hue: "#1a2436" },
-    { x: 0.88, w: 0.12, h: 42, hue: "#263248" },
+    const blocks = [
+    { x: 0.04, w: 0.13, h: 52, hue: "#141820" },
+    { x: 0.16, w: 0.1, h: 38, hue: "#10141c" },
+    { x: 0.28, w: 0.15, h: 64, hue: "#181c26" },
+    { x: 0.55, w: 0.12, h: 46, hue: "#12161e" },
+    { x: 0.68, w: 0.18, h: 70, hue: "#0e1218" },
+    { x: 0.88, w: 0.12, h: 42, hue: "#161a22" },
   ];
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
@@ -173,9 +179,9 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: num
   ctx.lineTo(leftNear, cam.nearY + 36);
   ctx.closePath();
   const soil = ctx.createLinearGradient(0, cam.horizon, 0, cam.h);
-  soil.addColorStop(0, "#3f3c39");
-  soil.addColorStop(0.45, "#2b2927");
-  soil.addColorStop(1, "#1c1a18");
+  soil.addColorStop(0, "#6a5a48");
+  soil.addColorStop(0.45, "#4a3f34");
+  soil.addColorStop(1, "#2e261e");
   ctx.fillStyle = soil;
   ctx.fill();
 
@@ -199,7 +205,7 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: num
       ctx.lineTo(x1b, y1);
       ctx.lineTo(x1a, y1);
       ctx.closePath();
-      ctx.fillStyle = stripe ? "#35322f" : "#2a2826";
+      ctx.fillStyle = stripe ? "#5c4d3d" : "#463a2e";
       ctx.fill();
     }
   }
@@ -214,8 +220,8 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: num
       if (z === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = "rgba(240, 200, 70, 0.8)";
-    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = "rgba(255, 214, 80, 0.92)";
+    ctx.lineWidth = 3;
     ctx.setLineDash([14, 16]);
     ctx.lineDashOffset = -distance * 1.6;
     ctx.stroke();
@@ -333,7 +339,7 @@ export function drawAltushka(
 ): void {
   const bob = Math.sin(spin) * 7 * s;
   const img = sprites.altushka;
-  const h = 58 * s;
+  const h = 86 * s;
   const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.36;
   const w = h * ratio;
   ctx.save();
