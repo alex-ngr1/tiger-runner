@@ -1,6 +1,6 @@
 # Tiger Runner
 
-Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as **Korzh** (6-frame run sheet) on a 3-lane dusk road: swipe, jump, collect **альтушки**, and don’t let Kozatska Rada vodka bottles catch you from behind.
+Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as **Korzh** (5-frame rear-view run sheet) on a 3-lane dusk road: swipe, jump, collect **альтушки**, and don’t let the single Kozatska Rada bottle catch you from behind.
 
 Playable inside Telegram and in a normal mobile/desktop browser.
 
@@ -9,11 +9,12 @@ Playable inside Telegram and in a normal mobile/desktop browser.
 - Endless 3-lane runner, `requestAnimationFrame` canvas (no heavy 3D)
 - Swipe / tap sides / arrow keys to change lanes
 - Jump: swipe up, tap center, Space / ArrowUp
-- Crates (jumpable) and kiosks (not jumpable) — hitting one is a stumble that lets the chase close in
-- Collectible альтушки (altushky); score = distance + pickups; best score in `localStorage`
-- Subway Surfers chase: clean start, first crash summons Kozatska Rada bottles behind you, second crash while chasing = caught. Run clean and they give up.
+- Jumpable hurdles (waist-to-chest) and lane-blocking cars — hitting one is a stumble that lets the chase close in
+- Collectible альтушки (altushky) as small lane pickups; score = distance + pickups; best score in `localStorage`
+- Пивнухи (yellow PIVIVO kiosk / ПИВО trailer) scroll on the LEFT and RIGHT of the track — side world, not obstacles
+- Subway Surfers chase: clean start, first crash summons ONE Kozatska Rada bottle behind you, second crash while chasing = caught. Run clean and it gives up.
 - Start / Game Over / Restart UI, mobile-first for Telegram WebApp
-- Korzh 6-frame run sheet (`webapp/public/korzh-run-sheet.png`) as the hero
+- Korzh run sheet (`webapp/public/korzh-run-sheet.png`) as the hero — shirtless, dark patterned shorts, from behind
 - aiogram 3.x bot with **Play · Грати** WebApp button
 
 ## Layout

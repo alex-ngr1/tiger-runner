@@ -121,3 +121,6 @@ if (bootParams.has("play") || bootParams.has("hit")) {
 if (bootParams.has("hit")) {
   window.setTimeout(() => game.debugHit(), 480);
 }
+if (bootParams.has("hurdle")) {
+  game.debugHurdle();
+}

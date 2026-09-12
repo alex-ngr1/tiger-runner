@@ -244,23 +244,43 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, distance: num
 }
 
 export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: number, time: number): void {
-  const spacing = 16;
+  const spacing = 20;
   const first = Math.floor(distance / spacing) - 1;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 7; i++) {
     const id = first + i;
-    const z = id * spacing - distance + 10;
-    if (z < -3 || z > 86) continue;
+    const z = id * spacing - distance + 12;
+    if (z < -4 || z > 80) continue;
     const t = persp(z);
-    const s = Math.max(0.12, t);
     const y = groundY(cam, t);
-    for (const side of [-1.2, 3.2] as const) {
-      const x = laneX(cam, side, t);
-      drawKiosk(ctx, x, y, s * 1.35, id + (side > 0 ? 17 : 0));
-    }
+    const shopH = cam.h * 0.36 * Math.max(0.14, t / persp(1.1));
+    const leftX = laneX(cam, -1.38, t);
+    const rightX = laneX(cam, 3.38, t);
+    // Alternate kiosk / trailer so both verges read as пивнухи, never on-lane.
+    const leftKiosk = id % 2 === 0;
+    drawShopSprite(ctx, leftKiosk ? sprites.kiosk : sprites.trailer, leftX, y, shopH);
+    drawShopSprite(ctx, leftKiosk ? sprites.trailer : sprites.kiosk, rightX, y, shopH * 0.92);
     if (id % 3 === 0) {
-      drawLamp(ctx, laneX(cam, -1.5, t), y, s * 0.9, time + id);
+      drawLamp(ctx, laneX(cam, -1.62, t), y, Math.max(0.16, t) * 0.95, time + id);
     }
   }
+}
+
+function drawShopSprite(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement | null,
+  x: number,
+  y: number,
+  h: number,
+): void {
+  if (!img || !img.naturalWidth) return;
+  const w = h * (img.naturalWidth / img.naturalHeight);
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 4, w * 0.38, Math.max(4, h * 0.04), 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.drawImage(img, x - w / 2, y - h + 8, w, h);
+  ctx.restore();
 }
 
 function drawLamp(
@@ -293,59 +313,6 @@ function drawLamp(
   ctx.restore();
 }
 
-function drawKiosk(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  s: number,
-  id: number,
-): void {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
-  ctx.beginPath();
-  ctx.ellipse(0, 8, 28, 7, 0, 0, Math.PI * 2);
-  ctx.fill();
-  roundBox(ctx, -26, -70, 52, 72, 3, id % 2 ? "#d8c39a" : "#c4b48a");
-  ctx.fillStyle = "#2f6b46";
-  ctx.fillRect(-26, -70, 52, 12);
-  ctx.fillStyle = "#c41e3a";
-  for (let i = 0; i < 6; i++) ctx.fillRect(-26 + i * 9, -82, 7, 12);
-  ctx.fillStyle = "#f4f0e4";
-  for (let i = 0; i < 6; i++) ctx.fillRect(-22 + i * 9, -82, 4, 12);
-  ctx.fillStyle = "#7ec8e8";
-  ctx.fillRect(-16, -52, 32, 20);
-  ctx.strokeStyle = "#2a3540";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(-16, -52, 32, 20);
-  ctx.fillStyle = "#f0c14b";
-  ctx.font = "bold 9px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("ПИВО", 0, -58);
-  ctx.fillStyle = "#1c2430";
-  ctx.fillRect(-8, -24, 16, 20);
-  ctx.fillStyle = "#8a5a28";
-  ctx.fillRect(-22, -18, 10, 8);
-  ctx.fillRect(12, -14, 8, 6);
-  // Stylized patrons — no faces, just slouching silhouettes.
-  if (id % 2 === 0) {
-    ctx.fillStyle = "#2a2018";
-    ctx.beginPath();
-    ctx.ellipse(-32, -10, 6, 8, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(-36, -4, 8, 14);
-    ctx.fillStyle = "#c41e3a";
-    ctx.fillRect(-38, -8, 3, 7);
-  } else {
-    ctx.fillStyle = "#1a2430";
-    ctx.beginPath();
-    ctx.ellipse(34, -8, 5.5, 7, -0.15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(30, -2, 8, 12);
-  }
-  ctx.restore();
-}
 
 export function drawAltushka(
   ctx: CanvasRenderingContext2D,
@@ -354,9 +321,10 @@ export function drawAltushka(
   s: number,
   spin: number,
 ): void {
-  const bob = Math.sin(spin) * 7 * s;
+  const bob = Math.sin(spin) * 5 * s;
   const img = sprites.altushka;
-  const h = Math.max(14, 40 * s);
+  // Coin-sized lane pickups — never character-scale.
+  const h = Math.max(12, 22 * s);
   const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.36;
   const w = h * ratio;
   ctx.save();
@@ -463,6 +431,15 @@ function drawBottleFallback(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.restore();
 }
 
+/** World scale so a local unit matches Korzh's 82-tall body at the same depth. */
+export function worldScale(cam: Cam, z: number, refZ = 0.95): number {
+  return playerScale(cam) * (persp(z) / persp(refZ));
+}
+
+export function playerScale(cam: Cam): number {
+  return (cam.h * 0.42) / RUNNER_LOCAL_H;
+}
+
 export function drawBarrier(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -474,19 +451,19 @@ export function drawBarrier(
   ctx.scale(s, s);
   ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.beginPath();
-  ctx.ellipse(0, 8, 30, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 3, 26, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Low Subway-style hurdle — jump it.
+  // Waist-to-chest hurdle in Korzh-local units (body is 82 tall).
   ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(-6, -28, 5, 30);
-  ctx.fillRect(10, -28, 5, 30);
-  for (let i = 0; i < 5; i++) {
+  ctx.fillRect(-22, -46, 6, 46);
+  ctx.fillRect(16, -46, 6, 46);
+  for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i % 2 ? "#f0c14b" : "#1a1a1a";
-    ctx.fillRect(-22 + i * 10, -32, 10, 10);
+    ctx.fillRect(-24 + i * 8, -48, 8, 14);
   }
   ctx.fillStyle = "#c41e3a";
-  ctx.fillRect(-24, -22, 52, 5);
+  ctx.fillRect(-26, -34, 52, 6);
   ctx.restore();
 }
 
@@ -504,21 +481,21 @@ export function drawTall(
   ctx.ellipse(0, 8, 26, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Lane-blocking car/train — cannot jump.
+  // Lane-blocking car — readable, shorter than near-camera Korzh.
   ctx.fillStyle = "#2a3340";
-  ctx.fillRect(-22, -70, 44, 70);
+  ctx.fillRect(-24, -58, 48, 58);
   ctx.fillStyle = "#1a222c";
-  ctx.fillRect(-24, -78, 48, 12);
+  ctx.fillRect(-26, -66, 52, 12);
   ctx.fillStyle = "#7ec8e8";
-  ctx.fillRect(-16, -62, 12, 10);
-  ctx.fillRect(2, -62, 12, 10);
+  ctx.fillRect(-16, -52, 14, 12);
+  ctx.fillRect(2, -52, 14, 12);
   ctx.fillStyle = "#c41e3a";
-  ctx.fillRect(-22, -18, 8, 6);
-  ctx.fillRect(14, -18, 8, 6);
+  ctx.fillRect(-24, -16, 8, 6);
+  ctx.fillRect(16, -16, 8, 6);
   ctx.fillStyle = "#111";
   ctx.beginPath();
-  ctx.arc(-12, 2, 7, 0, Math.PI * 2);
-  ctx.arc(12, 2, 7, 0, Math.PI * 2);
+  ctx.arc(-14, 2, 8, 0, Math.PI * 2);
+  ctx.arc(14, 2, 8, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -556,10 +533,8 @@ const RUN_FRAME_W = 157;
 const RUN_FRAME_H = 256;
 const RUN_SHEET_SRC = `${import.meta.env.BASE_URL}korzh-run-sheet.png`;
 
-/** Local-space height used to match on-screen size. */
+/** Local-space height of a packed Korzh frame. */
 const RUNNER_LOCAL_H = 82;
-/** Same ground contact as the old tiger shadow / hind paws. */
-const RUNNER_FEET_Y = 38;
 
 function sheetFrameCount(sheet: HTMLImageElement): number {
   const guess = Math.round(sheet.naturalWidth / (sheet.naturalHeight * (RUN_FRAME_W / RUN_FRAME_H)));
@@ -624,12 +599,12 @@ export function drawTiger(
   ctx.scale(scale, scale);
   ctx.rotate(lean * 0.16 + (dead ? 0.6 : 0));
 
-  const bob = airborne ? -14 : 0;
+  const bob = airborne ? -12 : 0;
   ctx.translate(0, bob);
 
   ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
-  ctx.ellipse(0, RUNNER_FEET_Y - bob * 0.2, 22, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 2 - bob * 0.15, 20, 6, 0, 0, Math.PI * 2);
   ctx.fill();
 
   if (sheet && sheet.naturalWidth > 0) {
@@ -639,7 +614,7 @@ export function drawTiger(
     const frame = runFrameIndex(pose, frames);
     const localW = RUNNER_LOCAL_H * (fw / fh);
     const destX = -localW / 2;
-    const destY = RUNNER_FEET_Y - RUNNER_LOCAL_H;
+    const destY = -RUNNER_LOCAL_H;
 
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";

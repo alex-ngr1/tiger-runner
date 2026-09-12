@@ -13,6 +13,8 @@ import {
   laneX,
   makeCam,
   persp,
+  playerScale,
+  worldScale,
   type Cam,
 } from "./draw";
 import { haptic, type TelegramWebApp } from "./telegram";
@@ -89,7 +91,6 @@ export class Game {
   private dpr = 1;
   private chasing = false;
   private chasers: Chaser[] = [];
-  private chaseTick = 0;
   private chaseAge = 0;
   private stumble = 0;
   private invuln = 0;
@@ -128,7 +129,6 @@ export class Game {
     this.particles = [];
     this.chasing = false;
     this.chasers = [];
-    this.chaseTick = 0;
     this.chaseAge = 0;
     this.stumble = 0;
     this.invuln = 0;
@@ -233,9 +233,8 @@ export class Game {
       const t = persp(playerDrawZ);
       const x = laneX(cam, this.lane, t);
       const gy = groundY(cam, t);
-      const jumpPx = this.y * 42 * t;
-      const scale = (cam.h * 0.42) / 82;
-      drawTiger(ctx, x, gy - 8 - jumpPx, scale, {
+      const jumpPx = this.y * 46 * t;
+      drawTiger(ctx, x, gy - jumpPx, playerScale(cam), {
         phase: this.phase,
         airborne: this.y > 0.08,
         lean: this.targetLane - this.lane,
@@ -245,7 +244,7 @@ export class Game {
 
     if (this.mode === "menu") {
       for (const e of drawList) this.drawEntity(e);
-      drawTiger(ctx, cam.w * 0.5, cam.h * 0.58, (cam.h * 0.36) / 82, {
+      drawTiger(ctx, cam.w * 0.5, cam.h * 0.72, playerScale(cam) * 0.86, {
         phase: this.phase,
         airborne: false,
         lean: Math.sin(this.time * 2) * 0.35,
@@ -300,17 +299,8 @@ export class Game {
       this.chasers = [];
       return;
     }
-    this.chaseTick += dt;
-    const follow = Math.round(this.lane);
-    const first = this.chasers[0];
-    const second = this.chasers[1];
-    if (first) first.targetLane = follow;
-    if (this.chaseTick > 0.85) {
-      this.chaseTick = 0;
-      const others = [0, 1, 2].filter((l) => l !== follow);
-      const pick = others[Math.floor(Math.random() * others.length)] ?? 0;
-      if (second) second.targetLane = pick;
-    }
+    const cop = this.chasers[0];
+    if (cop) cop.targetLane = this.lane;
     this.moveChasers(dt, 4.2);
   }
 
@@ -318,6 +308,11 @@ export class Game {
   debugHit(): void {
     if (this.mode !== "playing") return;
     this.crashObstacle();
+  }
+
+  /** Screenshot: plant a near-camera hurdle beside Korzh. */
+  debugHurdle(): void {
+    this.entities.push(this.make("barrier", 1, 4.2), this.make("barrier", 0, 7.5));
   }
 
   private moveChasers(dt: number, speed: number): void {
@@ -330,23 +325,21 @@ export class Game {
   private drawChasers(): void {
     const { cam, ctx } = this;
     const closeness = this.chaseClose();
-    const copZ = 0.06 + closeness * (PLAYER_Z - 0.28);
-    for (let i = 0; i < this.chasers.length; i++) {
-      const c = this.chasers[i];
-      if (!c) continue;
-      const t = persp(copZ + i * 0.07);
-      const x = laneX(cam, c.lane, t);
-      const gy = groundY(cam, t);
-      const behind = (1 - closeness) * 52;
-      const step = Math.sin(this.time * 16 + i * 2.2);
-      const hop = Math.abs(step) * (10 + closeness * 8);
-      const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
-      const squash = 1 - Math.abs(step) * 0.1;
-      const s = 1.05 + closeness * 0.45;
-      ctx.globalAlpha = 0.55 + closeness * 0.45;
-      drawBottle(ctx, x, gy + behind, s, hop, lean, squash);
-      ctx.globalAlpha = 1;
-    }
+    const copZ = 0.08 + closeness * (PLAYER_Z - 0.32);
+    const c = this.chasers[0];
+    if (!c) return;
+    const t = persp(copZ);
+    const x = laneX(cam, c.lane, t);
+    const gy = groundY(cam, t);
+    const behind = (1 - closeness) * 56;
+    const step = Math.sin(this.time * 16);
+    const hop = Math.abs(step) * (10 + closeness * 8);
+    const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
+    const squash = 1 - Math.abs(step) * 0.1;
+    const s = 0.95 + closeness * 0.35;
+    ctx.globalAlpha = 0.58 + closeness * 0.42;
+    drawBottle(ctx, x, gy + behind, s, hop, lean, squash);
+    ctx.globalAlpha = 1;
   }
 
   private drawEntity(e: Entity): void {
@@ -354,11 +347,14 @@ export class Game {
     const t = persp(e.z);
     const x = laneX(this.cam, e.lane, t);
     const y = groundY(this.cam, t);
-    const s = Math.max(0.12, t);
+    const depth = Math.max(0.12, t / persp(PLAYER_Z));
     if (e.kind === "altushka") {
-      drawAltushka(this.ctx, x, y - 10 * s, s * 0.95, this.time * 6 + e.z);
-    } else if (e.kind === "barrier") drawBarrier(this.ctx, x, y, s * 1.05);
-    else drawTall(this.ctx, x, y, s * 1.1);
+      drawAltushka(this.ctx, x, y - 8 * depth, depth, this.time * 6 + e.z);
+    } else if (e.kind === "barrier") {
+      drawBarrier(this.ctx, x, y, worldScale(this.cam, e.z));
+    } else {
+      drawTall(this.ctx, x, y, worldScale(this.cam, e.z) * 0.88);
+    }
   }
 
   private spawnAhead(): void {
@@ -472,10 +468,7 @@ export class Game {
     this.stumble = 0.4;
     this.shake = 0.75;
     const follow = Math.round(this.lane);
-    this.chasers = [
-      { lane: follow, targetLane: follow },
-      { lane: (follow + 2) % 3, targetLane: (follow + 2) % 3 },
-    ];
+    this.chasers = [{ lane: follow, targetLane: follow }];
     this.sfx.stumble();
     haptic(this.tg, "miss");
     const t = persp(PLAYER_Z);
