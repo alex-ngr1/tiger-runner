@@ -298,16 +298,14 @@ export class Game {
     const follow = Math.round(this.lane);
     const first = this.chasers[0];
     const second = this.chasers[1];
-    if (this.chaseGap <= CHASE_CATCH + 1.4 && first) {
-      first.targetLane = follow;
-    } else if (this.chaseTick > 0.85) {
+    if (first) first.targetLane = follow;
+    if (this.chaseTick > 0.95) {
       this.chaseTick = 0;
-      if (first) first.targetLane = follow;
       const others = [0, 1, 2].filter((l) => l !== follow);
       const pick = others[Math.floor(Math.random() * others.length)] ?? 0;
       if (second) second.targetLane = pick;
     }
-    this.moveChasers(dt, 2.3 + closeness * 5.5);
+    this.moveChasers(dt, 3.2 + closeness * 7);
     if (this.chaseGap <= CHASE_CATCH && this.bottleInLane()) this.die();
   }
 
@@ -315,9 +313,9 @@ export class Game {
     const t = this.time;
     const first = this.chasers[0];
     const second = this.chasers[1];
-    if (first) first.targetLane = 0.15 + Math.sin(t * 0.7) * 0.2;
-    if (second) second.targetLane = 1.85 + Math.cos(t * 0.6) * 0.2;
-    this.moveChasers(dt, 1.6);
+    if (first) first.targetLane = Math.sin(t * 0.8) > 0 ? 0 : 1;
+    if (second) second.targetLane = Math.cos(t * 0.65) > 0 ? 2 : 1;
+    this.moveChasers(dt, 2.4);
   }
 
   private moveChasers(dt: number, speed: number): void {
@@ -337,20 +335,25 @@ export class Game {
   }
 
   private drawChasers(): void {
-    const closeness = this.mode === "menu" ? 0.22 : this.threat();
-    const z = -0.15 + (PLAYER_Z - 0.08) * easeOut(closeness);
+    const closeness = this.mode === "menu" ? 0.18 : this.threat();
+    const { cam, ctx } = this;
+    // Near-camera band: cops sit in the lower screen and run up toward Korzh.
+    const copZ = 0.12 + easeOut(closeness) * (PLAYER_Z - 0.28);
     for (let i = 0; i < this.chasers.length; i++) {
       const c = this.chasers[i];
       if (!c) continue;
-      const hop = Math.abs(Math.sin(this.time * 11 + i * 1.7)) * (6 + closeness * 8);
-      const ez = Math.max(-0.2, z + i * 0.1);
-      const t = persp(ez);
-      const x = laneX(this.cam, c.lane, t);
-      const y = groundY(this.cam, t) + (1 - closeness) * 78;
-      const s = Math.max(0.48, t * (0.72 + closeness * 0.85));
-      this.ctx.globalAlpha = 0.72 + closeness * 0.28;
-      drawBottle(this.ctx, x, y, s * 1.35, hop);
-      this.ctx.globalAlpha = 1;
+      const t = persp(copZ + i * 0.06);
+      const x = laneX(cam, c.lane, t);
+      const gy = groundY(cam, t);
+      const down = (1 - closeness) * cam.h * 0.14;
+      const step = Math.sin(this.time * 16 + i * 2.2);
+      const hop = Math.abs(step) * (11 + closeness * 10);
+      const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
+      const squash = 1 - Math.abs(step) * 0.1;
+      const s = 1.05 + closeness * 0.45;
+      ctx.globalAlpha = 0.88 + closeness * 0.12;
+      drawBottle(ctx, x, gy + down, s, hop, lean, squash);
+      ctx.globalAlpha = 1;
     }
   }
 

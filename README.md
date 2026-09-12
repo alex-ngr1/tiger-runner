@@ -1,6 +1,6 @@
 # Tiger Runner
 
-Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as a **tiger** on a 3-lane dusk road: swipe, jump, collect **альтушки**, and don’t let Kozatska Rada vodka bottles catch you from behind.
+Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as **Korzh** (6-frame run sheet) on a 3-lane dusk road: swipe, jump, collect **альтушки**, and don’t let Kozatska Rada vodka bottles catch you from behind.
 
 Playable inside Telegram and in a normal mobile/desktop browser.
 
@@ -13,7 +13,7 @@ Playable inside Telegram and in a normal mobile/desktop browser.
 - Collectible альтушки (altushky); score = distance + pickups; best score in `localStorage`
 - Kozatska Rada bottles chase from behind (Subway Surfers-style). Catch = run over. Missed pickups also let them gain.
 - Start / Game Over / Restart UI, mobile-first for Telegram WebApp
-- Drawn tiger sprite (stripes, ears, tail — not a blank box)
+- Korzh 6-frame run sheet (`webapp/public/korzh-run-sheet.png`) as the hero
 - aiogram 3.x bot with **Play · Грати** WebApp button
 
 ## Layout

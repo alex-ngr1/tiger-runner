@@ -391,20 +391,31 @@ export function drawBottle(
   y: number,
   s: number,
   hop: number,
+  lean = 0,
+  squash = 1,
 ): void {
   const img = sprites.bottle;
-  const h = 84 * s;
+  const h = 92 * s * squash;
   const ratio = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : 0.55;
-  const w = h * ratio;
+  const w = (h / squash) * ratio * (2 - squash);
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.translate(x, y);
+  ctx.rotate(lean);
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
   ctx.beginPath();
-  ctx.ellipse(x, y + 4 * s, 16 * s, 5 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 6 * s, 18 * s, 5.5 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Cheap "running feet" so they read as pursuers, not pickups.
+  const gait = Math.sin(hop * 0.35 + lean * 4);
+  ctx.fillStyle = "#1a1410";
+  ctx.beginPath();
+  ctx.ellipse(-9 * s + gait * 7 * s, 5 * s, 7 * s, 2.6 * s, 0, 0, Math.PI * 2);
+  ctx.ellipse(9 * s - gait * 7 * s, 5 * s, 7 * s, 2.6 * s, 0, 0, Math.PI * 2);
   ctx.fill();
   if (img && img.naturalWidth) {
-    ctx.drawImage(img, x - w / 2, y - h - hop, w, h);
+    ctx.drawImage(img, -w / 2, -h - hop, w, h);
   } else {
-    drawBottleFallback(ctx, x, y - hop, s);
+    drawBottleFallback(ctx, 0, -hop, s);
   }
   ctx.restore();
 }
@@ -544,6 +555,60 @@ export interface TigerPose {
   dead?: boolean;
 }
 
+/** Horizontal run sheet: 6 frames × 157×256, served from webapp/public/. */
+const RUN_FRAME_COUNT = 6;
+const RUN_FRAME_W = 157;
+const RUN_FRAME_H = 256;
+const RUN_SHEET_SRC = `${import.meta.env.BASE_URL}korzh-run-sheet.png`;
+
+/** Local-space height of the old vector tiger (ears to paws), used to match on-screen size. */
+const RUNNER_LOCAL_H = 82;
+/** Same ground contact as the old tiger shadow / hind paws. */
+const RUNNER_FEET_Y = 38;
+
+let runSheet: HTMLImageElement | null = null;
+let runSheetState: "idle" | "loading" | "ready" | "error" = "idle";
+
+function ensureRunSheet(): HTMLImageElement | null {
+  if (runSheetState === "ready" && runSheet && runSheet.naturalWidth > 0) {
+    return runSheet;
+  }
+  if (runSheetState === "error") return null;
+  if (runSheetState === "loading") {
+    return runSheet && runSheet.complete && runSheet.naturalWidth > 0 ? runSheet : null;
+  }
+
+  runSheetState = "loading";
+  const img = new Image();
+  img.decoding = "async";
+  img.onload = () => {
+    runSheet = img;
+    runSheetState = img.naturalWidth > 0 ? "ready" : "error";
+    if (runSheetState === "error") {
+      console.warn(
+        `[draw] ${RUN_SHEET_SRC} loaded but is empty. Place korzh-run-sheet.png in webapp/public/.`,
+      );
+    }
+  };
+  img.onerror = () => {
+    runSheetState = "error";
+    console.warn(
+      `[draw] Failed to load ${RUN_SHEET_SRC}. Copy korzh-run-sheet.png into webapp/public/.`,
+    );
+  };
+  img.src = RUN_SHEET_SRC;
+  runSheet = img;
+  return img.complete && img.naturalWidth > 0 ? img : null;
+}
+
+ensureRunSheet();
+
+function runFrameIndex(pose: TigerPose): number {
+  if (pose.airborne) return 0;
+  const i = Math.floor(pose.phase) % RUN_FRAME_COUNT;
+  return i < 0 ? i + RUN_FRAME_COUNT : i;
+}
+
 export function drawTiger(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -551,198 +616,36 @@ export function drawTiger(
   scale: number,
   pose: TigerPose,
 ): void {
-  const { phase, airborne, lean, dead } = pose;
+  const { airborne, lean, dead } = pose;
+  const sheet = ensureRunSheet();
+
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale, scale);
   ctx.rotate(lean * 0.16 + (dead ? 0.6 : 0));
 
-  const bob = airborne ? -14 : Math.sin(phase * 2) * 2.4;
+  const bob = airborne ? -14 : 0;
   ctx.translate(0, bob);
-
-  const a = airborne ? 0.35 : Math.sin(phase);
-  const b = airborne ? -0.25 : Math.sin(phase + Math.PI);
 
   ctx.fillStyle = "rgba(0,0,0,0.28)";
   ctx.beginPath();
-  ctx.ellipse(0, 38 - bob * 0.2, 28, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, RUNNER_FEET_Y - bob * 0.2, 22, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Tail
-  ctx.strokeStyle = FUR;
-  ctx.lineWidth = 10;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(18, 8);
-  ctx.quadraticCurveTo(42, -8 + a * 10, 36, -34 + a * 16);
-  ctx.stroke();
-  ctx.strokeStyle = STRIPE;
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(30, -8);
-  ctx.lineTo(33, -16);
-  ctx.moveTo(34, -22);
-  ctx.lineTo(35, -28);
-  ctx.stroke();
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.arc(36, -34 + a * 16, 5, 0, Math.PI * 2);
-  ctx.fill();
+  if (sheet && sheet.naturalWidth > 0) {
+    const frames = RUN_FRAME_COUNT;
+    const fw = sheet.naturalWidth / frames || RUN_FRAME_W;
+    const fh = sheet.naturalHeight || RUN_FRAME_H;
+    const frame = runFrameIndex(pose);
+    const localW = RUNNER_LOCAL_H * (fw / fh);
+    const destX = -localW / 2;
+    const destY = RUNNER_FEET_Y - RUNNER_LOCAL_H;
 
-  drawLeg(ctx, 10, 18, b, 1);
-  drawLeg(ctx, -12, 20, a, -1);
-
-  // Body
-  ctx.fillStyle = FUR;
-  ctx.beginPath();
-  ctx.ellipse(0, 6, 26, 20, -0.15, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.ellipse(-4, 12, 12, 10, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = STRIPE;
-  ctx.lineWidth = 4;
-  ctx.lineCap = "round";
-  for (const [x0, y0, x1, y1] of [
-    [8, -4, 10, 10],
-    [-2, -6, 0, 8],
-    [16, 0, 14, 12],
-  ] as const) {
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(sheet, frame * fw, 0, fw, fh, destX, destY, localW, RUNNER_LOCAL_H);
   }
 
-  drawLeg(ctx, 6, 16, a * 0.9, 1, true);
-  drawLeg(ctx, -16, 16, b * 0.9, -1, true);
-
-  // Head
-  ctx.fillStyle = FUR;
-  ctx.beginPath();
-  ctx.ellipse(-10, -22, 22, 20, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Ears
-  drawEar(ctx, -26, -38, -1);
-  drawEar(ctx, 4, -40, 1);
-
-  // Forehead stripes
-  ctx.strokeStyle = STRIPE;
-  ctx.lineWidth = 3.2;
-  ctx.beginPath();
-  ctx.moveTo(-10, -34);
-  ctx.lineTo(-12, -18);
-  ctx.moveTo(-2, -32);
-  ctx.lineTo(-6, -16);
-  ctx.moveTo(-18, -30);
-  ctx.lineTo(-16, -16);
-  ctx.stroke();
-
-  // Muzzle
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.ellipse(-18, -14, 11, 9, -0.25, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Eyes — amber, clearly a tiger
-  ctx.fillStyle = "#1a120c";
-  ctx.beginPath();
-  ctx.ellipse(-20, -24, 5.2, 5.6, 0, 0, Math.PI * 2);
-  ctx.ellipse(-6, -26, 4.4, 4.8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#f4c430";
-  ctx.beginPath();
-  ctx.ellipse(-19.5, -24, 3.2, 3.4, 0, 0, Math.PI * 2);
-  ctx.ellipse(-5.8, -26, 2.6, 2.8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#1a120c";
-  ctx.beginPath();
-  ctx.ellipse(-18.6, -24, 1.4, 2.4, 0, 0, Math.PI * 2);
-  ctx.ellipse(-5.2, -26, 1.2, 2.1, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.arc(-21, -25.5, 1.1, 0, Math.PI * 2);
-  ctx.arc(-7, -27.2, 0.9, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Nose + mouth
-  ctx.fillStyle = "#e23d3d";
-  ctx.beginPath();
-  ctx.moveTo(-26, -14);
-  ctx.lineTo(-20, -16);
-  ctx.lineTo(-20, -12);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = "#1a120c";
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(-22, -12);
-  ctx.quadraticCurveTo(-24, -6, -28, -8);
-  ctx.moveTo(-22, -12);
-  ctx.quadraticCurveTo(-18, -6, -16, -9);
-  ctx.stroke();
-
-  // Cheek fluff
-  ctx.fillStyle = FUR_DARK;
-  ctx.beginPath();
-  ctx.ellipse(4, -16, 7, 6, 0.4, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawEar(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  dir: number,
-): void {
-  ctx.fillStyle = STRIPE;
-  ctx.beginPath();
-  ctx.moveTo(x, y + 10);
-  ctx.lineTo(x + dir * 10, y - 10);
-  ctx.lineTo(x + dir * 18, y + 8);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = FUR;
-  ctx.beginPath();
-  ctx.moveTo(x + dir * 2, y + 8);
-  ctx.lineTo(x + dir * 10, y - 5);
-  ctx.lineTo(x + dir * 15, y + 7);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#f4b8c5";
-  ctx.beginPath();
-  ctx.moveTo(x + dir * 5, y + 6);
-  ctx.lineTo(x + dir * 10, y - 1);
-  ctx.lineTo(x + dir * 13, y + 6);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawLeg(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  swing: number,
-  side: number,
-  front = false,
-): void {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(swing * 0.55);
-  ctx.fillStyle = front ? FUR : FUR_DARK;
-  roundBox(ctx, -6, 0, 12, 22, 5, front ? FUR : FUR_DARK);
-  ctx.fillStyle = CREAM;
-  ctx.beginPath();
-  ctx.ellipse(side * 1, 22, 8, 5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = STRIPE;
-  ctx.fillRect(-3, 8, 6, 3);
   ctx.restore();
 }
 
