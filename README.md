@@ -1,6 +1,6 @@
 # Tiger Runner
 
-Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as a **tiger** on a 3-lane jungle track: swipe, jump, grab coins, don’t eat a tree.
+Telegram Mini App (WebApp) endless runner inspired by Subway Surfers. You play as a **runner** on a 3-lane jungle track: swipe, jump, grab coins, don’t eat a tree.
 
 Playable inside Telegram and in a normal mobile/desktop browser.
 
@@ -12,7 +12,7 @@ Playable inside Telegram and in a normal mobile/desktop browser.
 - Crates (jumpable) and tall trees (not jumpable) — collision ends the run
 - Coins; score = distance + coins; best score in `localStorage`
 - Start / Game Over / Restart UI, mobile-first for Telegram WebApp
-- Drawn tiger sprite (stripes, ears, tail — not a blank box)
+- Photo run-cycle sprite (`webapp/public/korzh-run-sheet.png`, 6 frames, back view)
 - aiogram 3.x bot with **Play · Грати** WebApp button
 
 ## Layout
@@ -94,6 +94,7 @@ Not in this MVP, on purpose:
 
 ## Notes
 
-- Mid-range phones: canvas DPR is capped at 2, assets are drawn (no image atlases).
+- Player sprite: put `korzh-run-sheet.png` in `webapp/public/` (horizontal sheet, 6 frames × 157×256, transparent background). Vite serves it at `/korzh-run-sheet.png`. The game will not draw the runner if that file is missing.
+- Mid-range phones: canvas DPR is capped at 2.
 - Mute persists in `localStorage` (`tigerRunner.muted`).
 - Best score key: `tigerRunner.bestScore`.
