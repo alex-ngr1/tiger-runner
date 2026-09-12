@@ -11,7 +11,7 @@ Playable inside Telegram and in a normal mobile/desktop browser.
 - Jump: swipe up, tap center, Space / ArrowUp
 - Crates (jumpable) and kiosks (not jumpable) — hitting one is a stumble that lets the chase close in
 - Collectible альтушки (altushky); score = distance + pickups; best score in `localStorage`
-- Kozatska Rada bottles chase from behind (Subway Surfers-style). Catch = run over. Missed pickups also let them gain.
+- Subway Surfers chase: clean start, first crash summons Kozatska Rada bottles behind you, second crash while chasing = caught. Run clean and they give up.
 - Start / Game Over / Restart UI, mobile-first for Telegram WebApp
 - Korzh 6-frame run sheet (`webapp/public/korzh-run-sheet.png`) as the hero
 - aiogram 3.x bot with **Play · Грати** WebApp button
