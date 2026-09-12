@@ -255,7 +255,7 @@ export function drawWayside(ctx: CanvasRenderingContext2D, cam: Cam, distance: n
     const y = groundY(cam, t);
     for (const side of [-1.2, 3.2] as const) {
       const x = laneX(cam, side, t);
-      drawKiosk(ctx, x, y, s * 1.15, id + (side > 0 ? 17 : 0));
+      drawKiosk(ctx, x, y, s * 1.35, id + (side > 0 ? 17 : 0));
     }
     if (id % 3 === 0) {
       drawLamp(ctx, laneX(cam, -1.5, t), y, s * 0.9, time + id);
@@ -325,6 +325,25 @@ function drawKiosk(
   ctx.fillText("ПИВО", 0, -58);
   ctx.fillStyle = "#1c2430";
   ctx.fillRect(-8, -24, 16, 20);
+  ctx.fillStyle = "#8a5a28";
+  ctx.fillRect(-22, -18, 10, 8);
+  ctx.fillRect(12, -14, 8, 6);
+  // Stylized patrons — no faces, just slouching silhouettes.
+  if (id % 2 === 0) {
+    ctx.fillStyle = "#2a2018";
+    ctx.beginPath();
+    ctx.ellipse(-32, -10, 6, 8, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(-36, -4, 8, 14);
+    ctx.fillStyle = "#c41e3a";
+    ctx.fillRect(-38, -8, 3, 7);
+  } else {
+    ctx.fillStyle = "#1a2430";
+    ctx.beginPath();
+    ctx.ellipse(34, -8, 5.5, 7, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(30, -2, 8, 12);
+  }
   ctx.restore();
 }
 
@@ -485,15 +504,22 @@ export function drawTall(
   ctx.ellipse(0, 8, 26, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Tall lane blocker — cannot jump.
-  ctx.fillStyle = "#3a3a40";
-  ctx.fillRect(-20, -96, 40, 98);
-  ctx.fillStyle = "#f0c14b";
-  for (let i = 0; i < 8; i++) {
-    ctx.fillRect(-20, -90 + i * 12, 40, 4);
-  }
+  // Lane-blocking car/train — cannot jump.
+  ctx.fillStyle = "#2a3340";
+  ctx.fillRect(-22, -70, 44, 70);
+  ctx.fillStyle = "#1a222c";
+  ctx.fillRect(-24, -78, 48, 12);
+  ctx.fillStyle = "#7ec8e8";
+  ctx.fillRect(-16, -62, 12, 10);
+  ctx.fillRect(2, -62, 12, 10);
   ctx.fillStyle = "#c41e3a";
-  ctx.fillRect(-22, -100, 44, 8);
+  ctx.fillRect(-22, -18, 8, 6);
+  ctx.fillRect(14, -18, 8, 6);
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(-12, 2, 7, 0, Math.PI * 2);
+  ctx.arc(12, 2, 7, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 

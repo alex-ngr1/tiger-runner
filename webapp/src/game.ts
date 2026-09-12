@@ -280,7 +280,16 @@ export class Game {
 
   private threat(): number {
     if (!this.chasing) return 0;
-    return Math.max(0.35, Math.min(1, 0.4 + this.chaseAge / CHASE_GIVE_UP));
+    return Math.max(0.2, Math.min(1, this.chaseClose()));
+  }
+
+  /** 0 = just spawned behind, 1 = on your heels. Recedes as cops give up. */
+  private chaseClose(): number {
+    if (this.mode === "dead") return 1;
+    const closeIn = Math.min(1, this.chaseAge / 3.8);
+    const fadeStart = CHASE_GIVE_UP - 2.2;
+    const fade = this.chaseAge > fadeStart ? (this.chaseAge - fadeStart) / 2.2 : 0;
+    return Math.max(0, closeIn * (1 - fade));
   }
 
   private tickChase(dt: number): void {
@@ -320,20 +329,23 @@ export class Game {
 
   private drawChasers(): void {
     const { cam, ctx } = this;
-    const caught = this.mode === "dead";
-    const copZ = caught ? PLAYER_Z - 0.15 : 0.22;
+    const closeness = this.chaseClose();
+    const copZ = 0.06 + closeness * (PLAYER_Z - 0.28);
     for (let i = 0; i < this.chasers.length; i++) {
       const c = this.chasers[i];
       if (!c) continue;
-      const t = persp(copZ + i * 0.08);
+      const t = persp(copZ + i * 0.07);
       const x = laneX(cam, c.lane, t);
       const gy = groundY(cam, t);
+      const behind = (1 - closeness) * 52;
       const step = Math.sin(this.time * 16 + i * 2.2);
-      const hop = Math.abs(step) * 14;
+      const hop = Math.abs(step) * (10 + closeness * 8);
       const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
       const squash = 1 - Math.abs(step) * 0.1;
-      const s = 1.35 + (caught ? 0.25 : 0);
-      drawBottle(ctx, x, gy + 18, s, hop, lean, squash);
+      const s = 1.05 + closeness * 0.45;
+      ctx.globalAlpha = 0.55 + closeness * 0.45;
+      drawBottle(ctx, x, gy + behind, s, hop, lean, squash);
+      ctx.globalAlpha = 1;
     }
   }
 
