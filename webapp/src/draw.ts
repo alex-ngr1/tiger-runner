@@ -461,14 +461,14 @@ export function drawBarrier(
 
   // Waist-to-chest hurdle in Korzh-local units (body is 82 tall).
   ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(-22, -46, 6, 46);
-  ctx.fillRect(16, -46, 6, 46);
+  ctx.fillRect(-20, -56, 6, 56);
+  ctx.fillRect(14, -56, 6, 56);
   for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i % 2 ? "#f0c14b" : "#1a1a1a";
-    ctx.fillRect(-24 + i * 8, -48, 8, 14);
+    ctx.fillRect(-22 + i * 8, -58, 8, 16);
   }
   ctx.fillStyle = "#c41e3a";
-  ctx.fillRect(-26, -34, 52, 6);
+  ctx.fillRect(-24, -42, 48, 7);
   ctx.restore();
 }
 
