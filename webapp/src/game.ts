@@ -298,7 +298,9 @@ export class Game {
     const follow = Math.round(this.lane);
     const first = this.chasers[0];
     const second = this.chasers[1];
-    if (first) first.targetLane = follow;
+    if (first) {
+      first.targetLane = closeness > 0.12 || this.distance > 28 ? follow : 0;
+    }
     if (this.chaseTick > 0.95) {
       this.chaseTick = 0;
       const others = [0, 1, 2].filter((l) => l !== follow);
@@ -338,21 +340,21 @@ export class Game {
     const closeness = this.mode === "menu" ? 0.18 : this.threat();
     const { cam, ctx } = this;
     // Near-camera band: cops sit in the lower screen and run up toward Korzh.
-    const copZ = 0.12 + easeOut(closeness) * (PLAYER_Z - 0.28);
+    const copZ = 0.08 + easeOut(closeness) * (PLAYER_Z - 0.32);
     for (let i = 0; i < this.chasers.length; i++) {
       const c = this.chasers[i];
       if (!c) continue;
-      const t = persp(copZ + i * 0.06);
+      const t = persp(copZ + i * 0.05);
       const x = laneX(cam, c.lane, t);
       const gy = groundY(cam, t);
-      const down = (1 - closeness) * cam.h * 0.14;
+      const behind = (1 - closeness) * 72;
       const step = Math.sin(this.time * 16 + i * 2.2);
-      const hop = Math.abs(step) * (11 + closeness * 10);
+      const hop = Math.abs(step) * (12 + closeness * 10);
       const lean = (c.targetLane - c.lane) * 0.28 + step * 0.09;
       const squash = 1 - Math.abs(step) * 0.1;
-      const s = 1.05 + closeness * 0.45;
-      ctx.globalAlpha = 0.88 + closeness * 0.12;
-      drawBottle(ctx, x, gy + down, s, hop, lean, squash);
+      const s = 0.98 + closeness * 0.42;
+      ctx.globalAlpha = 0.9 + closeness * 0.1;
+      drawBottle(ctx, x, gy + behind, s, hop, lean, squash);
       ctx.globalAlpha = 1;
     }
   }
